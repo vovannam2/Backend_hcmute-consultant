@@ -1,27 +1,31 @@
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import morgan from "morgan";
-import dotenv from "dotenv";
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const morgan = require("morgan");
+const bodyParser = require("body-parser"); // nếu muốn parse form urlencoded
+const connectDB = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
 
-dotenv.config();
 const app = express();
 
-// middlewares
-app.use(cors());
-app.use(express.json());
-app.use(morgan("dev"));
+// Middlewares
+app.use(cors());               // Cho phép frontend gọi API
+app.use(express.json());       // Parse body JSON
+app.use(bodyParser.urlencoded({ extended: true })); // parse form (nếu cần)
+app.use(morgan("dev"));        // Log request ra console
 
-// kết nối MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch(err => console.error("❌ MongoDB error:", err));
+// Routes
+app.use("/api/auth", authRoutes);
 
-// route test
+// Health check
 app.get("/api/health", (req, res) => {
-  res.json({ message: "Backend is running!" });
+  res.json({ status: "ok", message: "Backend running..." });
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${process.env.PORT}`);
+// Kết nối DB và chạy server
+connectDB().then(() => {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () =>
+    console.log(`🚀 Server running on http://localhost:${PORT}`)
+  );
 });
