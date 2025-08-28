@@ -1,27 +1,35 @@
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import morgan from "morgan";
-import dotenv from "dotenv";
+// src/index.js
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const authRoutes = require("./routes/auth");
+const authMiddleware = require("./middleware/authMiddleware");
 
-dotenv.config();
 const app = express();
 
-// middlewares
-app.use(cors());
+// Middlewares
 app.use(express.json());
-app.use(morgan("dev"));
 
-// kết nối MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch(err => console.error("❌ MongoDB error:", err));
+// Routes
+app.use("/api/auth", authRoutes);
 
-// route test
+// Protected route test
+app.get("/api/protected", authMiddleware, (req, res) => {
+  res.json({ message: `Hello user ${req.user.id}, you are authenticated!` });
+});
+
+// Health check
 app.get("/api/health", (req, res) => {
   res.json({ message: "Backend is running!" });
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${process.env.PORT}`);
-});
+// Connect MongoDB and start server
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch(err => console.error("❌ MongoDB connection error:", err));
