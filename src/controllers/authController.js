@@ -9,9 +9,11 @@ const { sendOtpMail } = require("../utils/sendEmail");
 // B1: nhận info -> tạo OTP (chưa tạo user)
 const registerRequest = async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    let { fullName, email, password } = req.body;
     if (!fullName || !email || !password)
       return res.status(400).json({ error: "Missing fields" });
+
+    email = String(email).trim().toLowerCase();
 
     const exists = await User.findOne({ email });
     if (exists && exists.isVerified)
@@ -19,20 +21,22 @@ const registerRequest = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // clear OTP cũ
+    // clear OTP cũ cho mục đích register
     await OtpToken.deleteMany({ email, purpose: "register" });
 
     const code = generateOtp(6);
     const ttlMin = Number(process.env.OTP_EXPIRES_MIN || 5);
     const expiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
 
+    // Lưu HASH vào field `password` của OtpToken (thống nhất tên với User)
     await OtpToken.create({
       email,
       code,
       purpose: "register",
       fullName,
-      passwordHash,
+      password: passwordHash,
       expiresAt,
+      attempts: 0,
     });
 
     await sendOtpMail({ email, code, purpose: "register" });
@@ -46,8 +50,10 @@ const registerRequest = async (req, res) => {
 // B2: xác thực OTP -> tạo/cập nhật user
 const registerVerify = async (req, res) => {
   try {
-    const { email, code } = req.body;
+    let { email, code } = req.body;
     if (!email || !code) return res.status(400).json({ error: "Missing fields" });
+
+    email = String(email).trim().toLowerCase();
 
     const otpDoc = await OtpToken.findOne({ email, purpose: "register" });
     if (!otpDoc) return res.status(400).json({ error: "OTP not found, request again" });
@@ -68,18 +74,23 @@ const registerVerify = async (req, res) => {
       return res.status(400).json({ error: "Invalid OTP" });
     }
 
+    if (!otpDoc.password) {
+      // Không có hash trong OTP record -> không thể tạo user hợp lệ
+      return res.status(500).json({ error: "OTP record invalid (missing password hash)" });
+    }
+
     // OTP đúng
     let user = await User.findOne({ email });
     if (user) {
       user.fullName = otpDoc.fullName || user.fullName;
-      user.passwordHash = otpDoc.passwordHash || user.passwordHash;
+      user.password = otpDoc.password || user.password; // hash
       user.isVerified = true;
       await user.save();
     } else {
       user = await User.create({
         fullName: otpDoc.fullName,
         email,
-        passwordHash: otpDoc.passwordHash,
+        password: otpDoc.password, // hash
         isVerified: true,
       });
     }
@@ -92,7 +103,29 @@ const registerVerify = async (req, res) => {
   }
 };
 
+const login = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(400).json({ message: 'Invalid email or password' });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
+
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        res.json({ token });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 module.exports = {
   registerRequest,
   registerVerify,
+  login,
 };
