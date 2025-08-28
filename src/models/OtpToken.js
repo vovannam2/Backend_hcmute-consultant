@@ -4,7 +4,7 @@ const OtpTokenSchema = new mongoose.Schema(
   {
     email:   { type: String, required: true, index: true },
     code:    { type: String, required: true }, // '123456'
-    purpose: { type: String, enum: ["register", "forgot"], required: true },
+    purpose: { type: String, enum: ["register", "forgot", "reset"], required: true },
 
     // (Đăng ký) kèm dữ liệu tạm
     fullName:     { type: String },
