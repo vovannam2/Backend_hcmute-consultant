@@ -3,6 +3,9 @@ const {
   registerRequest,
   registerVerify,
   login,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
 } = require("../controllers/authController");
 
 const router = express.Router();
@@ -11,6 +14,10 @@ const router = express.Router();
 router.post("/register/request", registerRequest);
 router.post("/register/verify", registerVerify);
 router.post("/login", login);
+router.post("/forgot-password", forgotPassword);
+router.post("/verify-otp", verifyOtp);
+router.post("/reset-password", resetPassword);
+
 // Forgot Password (OTP)
 //router.post("/forgot/request", forgotPasswordRequest);
 // router.post("/forgot/verify", forgotPasswordVerify);
