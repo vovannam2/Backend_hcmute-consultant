@@ -2,7 +2,6 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const authRoutes = require("./routes/auth");
 const authMiddleware = require("./middleware/authMiddleware");
 const cors = require("cors");
 const morgan = require("morgan");
@@ -26,7 +25,10 @@ app.use("/api/auth", authRoutes);
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", message: "Backend running..." });
 });
-
-app.listen(process.env.PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${process.env.PORT}`);
+// Kết nối DB và chạy server
+connectDB().then(() => {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () =>
+    console.log(`🚀 Server running on http://localhost:${PORT}`)
+  );
 });

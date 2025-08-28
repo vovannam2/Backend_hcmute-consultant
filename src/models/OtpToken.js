@@ -8,7 +8,7 @@ const OtpTokenSchema = new mongoose.Schema(
 
     // (Đăng ký) kèm dữ liệu tạm
     fullName:     { type: String },
-    passwordHash: { type: String },
+    password: { type: String },
 
     // TTL
     expiresAt: { type: Date, required: true },
