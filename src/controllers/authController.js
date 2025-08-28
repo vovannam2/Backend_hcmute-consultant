@@ -1,12 +1,80 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 const User = require("../models/User");
 const OtpToken = require("../models/OtpToken");
 const { generateOtp } = require("../utils/otp");
 const { sendOtpMail } = require("../utils/sendEmail");
+const jwt = require("jsonwebtoken");
+
+// ===== FORGOT PASSWORD =====
+
+// Gửi OTP
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "Email không tồn tại" });
+
+    const code = generateOtp(6);
+
+    await OtpToken.deleteMany({ email, purpose: "reset" });
+    const ttlMin = Number(process.env.OTP_EXPIRES_MIN || 5);
+    const expiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
+
+    const otpToken = new OtpToken({ email, code, purpose: "reset", expiresAt });
+    await otpToken.save();
+
+    await sendOtpMail({ email, code, purpose: "reset" });
+
+    res.json({ message: "OTP đã được gửi đến email", ttlMinutes: ttlMin });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server", error: err.message });
+  }
+};
+
+// Xác minh OTP
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    const record = await OtpToken.findOne({ email, code, purpose: "reset" });
+    if (!record) return res.status(400).json({ message: "OTP không hợp lệ hoặc đã hết hạn" });
+
+    if (record.expiresAt < new Date()) {
+      await record.deleteOne();
+      return res.status(400).json({ message: "OTP đã hết hạn" });
+    }
+
+    res.json({ message: "OTP hợp lệ" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server", error: err.message });
+  }
+};
+
+// Đặt lại mật khẩu
+const resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    const record = await OtpToken.findOne({ email, code, purpose: "reset" });
+    if (!record) return res.status(400).json({ message: "OTP không hợp lệ hoặc đã hết hạn" });
+
+    if (record.expiresAt < new Date()) {
+      await record.deleteOne();
+      return res.status(400).json({ message: "OTP đã hết hạn" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await User.updateOne({ email }, { password: hashedPassword });
+
+    await OtpToken.deleteMany({ email, purpose: "reset" });
+
+    res.json({ message: "Đặt lại mật khẩu thành công" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server", error: err.message });
+  }
+};
 
 // ===== REGISTER WITH OTP =====
 
-// B1: nhận info -> tạo OTP (chưa tạo user)
+// B1: Nhận info -> tạo OTP (chưa tạo user)
 const registerRequest = async (req, res) => {
   try {
     let { fullName, email, password } = req.body;
@@ -28,7 +96,6 @@ const registerRequest = async (req, res) => {
     const ttlMin = Number(process.env.OTP_EXPIRES_MIN || 5);
     const expiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
 
-    // Lưu HASH vào field `password` của OtpToken (thống nhất tên với User)
     await OtpToken.create({
       email,
       code,
@@ -75,7 +142,6 @@ const registerVerify = async (req, res) => {
     }
 
     if (!otpDoc.password) {
-      // Không có hash trong OTP record -> không thể tạo user hợp lệ
       return res.status(500).json({ error: "OTP record invalid (missing password hash)" });
     }
 
@@ -83,14 +149,14 @@ const registerVerify = async (req, res) => {
     let user = await User.findOne({ email });
     if (user) {
       user.fullName = otpDoc.fullName || user.fullName;
-      user.password = otpDoc.password || user.password; // hash
+      user.password = otpDoc.password || user.password;
       user.isVerified = true;
       await user.save();
     } else {
       user = await User.create({
         fullName: otpDoc.fullName,
         email,
-        password: otpDoc.password, // hash
+        password: otpDoc.password,
         isVerified: true,
       });
     }
@@ -103,28 +169,31 @@ const registerVerify = async (req, res) => {
   }
 };
 
+// ===== LOGIN =====
 const login = async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ message: 'Invalid email or password' });
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
 
-        const token = jwt.sign(
-            { id: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
 
-        res.json({ token });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
+// ===== EXPORTS =====
 module.exports = {
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
   registerRequest,
   registerVerify,
   login,
