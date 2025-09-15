@@ -1,8 +1,8 @@
 const bcrypt = require("bcrypt");
-const User = require("../models/User");
-const OtpToken = require("../models/OtpToken");
-const { generateOtp } = require("../utils/otp");
-const { sendOtpMail } = require("../utils/sendEmail");
+const User = require("../../models/User");
+const OtpToken = require("../../models/OtpToken");
+const { generateOtp } = require("../../utils/otp");
+const { sendOtpMail } = require("../../utils/sendEmail");
 const jwt = require("jsonwebtoken");
 
 // ===== FORGOT PASSWORD =====
