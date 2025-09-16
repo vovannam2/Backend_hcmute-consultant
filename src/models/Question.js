@@ -26,7 +26,7 @@ const questionSchema = new mongoose.Schema({
   
   // Phân loại câu hỏi
   department: { 
-    type: mongoose.Schema.Types.ObjectId, 
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Department', 
     required: true 
   },
@@ -55,6 +55,10 @@ const questionSchema = new mongoose.Schema({
   
   // Trạng thái
   statusApproval: { 
+    type: Boolean, 
+    default: false 
+  },
+  statusAnswer: { 
     type: Boolean, 
     default: false 
   },
