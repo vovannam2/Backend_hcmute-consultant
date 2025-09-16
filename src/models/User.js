@@ -75,7 +75,7 @@ const userSchema = new mongoose.Schema({
   // Phân quyền
   role: { 
     type: String, 
-    enum: ['USER', 'TUVANVIEN', 'TRUONGBANTUVAN', 'ADMIN'], 
+    enum: ['USER', 'TUVANVIEN', 'TRUONGBANTUVAN'], 
     required: true 
   },
   roleConsultant: { 

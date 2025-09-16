@@ -6,7 +6,7 @@ const {
   forgotPassword,
   verifyOtp,
   resetPassword,
-} = require("../controllers/authController");
+} = require("../controllers/common/authController");
 
 const router = express.Router();
 
