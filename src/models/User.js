@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema({
     maxlength: 255 
   },
   
+  isVerified: {                
+    type: Boolean,
+    default: false             
+  },
+  
   // Thông tin xác thực
   provider: { 
     type: String, 
@@ -71,6 +76,10 @@ const userSchema = new mongoose.Schema({
   verifyRegister: { type: String, maxlength: 50 },
   verifyCodeExpirationTime: { type: Date },
   verifyCodeAttemptCount: { type: Number, default: 0 },
+  
+  // Refresh Token (🔹 thêm mới)
+  refreshToken: { type: String },                       // Lưu refresh token hiện tại
+  refreshTokenExpiresAt: { type: Date },                // Thời gian hết hạn refresh token
   
   // Phân quyền
   role: { 
