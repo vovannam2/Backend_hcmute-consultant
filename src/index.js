@@ -8,6 +8,7 @@ const morgan = require("morgan");
 const bodyParser = require("body-parser"); // nếu muốn parse form urlencoded
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 const questionRoutes = require("./routes/questionRoutes");
 
 const app = express();
@@ -20,7 +21,7 @@ app.use(morgan("dev"));        // Log request ra console
 
 // Routes
 app.use("/api/auth", authRoutes);
-
+app.use("/api/user", userRoutes);
 app.use("/api/questions", questionRoutes);
 
 
