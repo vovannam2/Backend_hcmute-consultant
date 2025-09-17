@@ -198,7 +198,7 @@ exports.deleteQuestionByAdmin = async (questionId, user, reason) => {
 
 exports.getQuestionById = async (questionId) => {
   const question = await Question.findById(questionId).populate(
-    "user department field answers subQuestions"
+    "user department field subQuestions"
   );
   if (!question) throw new Error("Không tìm thấy câu hỏi");
   return question;
@@ -230,7 +230,7 @@ exports.searchQuestions = async (keyword, query) => {
   return { data, total, page: Number(page), size: Number(size) };
 };
 
-
+/// sau test 
 exports.getDeletionLogs = async (query) => {
   const { page = 0, size = 10 } = query;
 
@@ -245,6 +245,7 @@ exports.getDeletionLogs = async (query) => {
   return { content: logs, totalElements: total, page: Number(page), size: Number(size) };
 };
 
+// sau test
 exports.getDeletionLogDetail = async (id) => {
   const log = await DeletionLog.findById(id).populate("question");
   if (!log) throw new Error("Không tìm thấy log");

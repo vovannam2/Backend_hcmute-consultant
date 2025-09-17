@@ -8,7 +8,7 @@ const parseBoolean = require("../middleware/parseBoolean");
 // Tạo câu hỏi mới
 router.post(
   "/",
-  authMiddleware,
+  authMiddleware(),
   parseBoolean,
   upload.single("file"),
   questionController.createQuestion
@@ -17,7 +17,7 @@ router.post(
 // Sửa câu hỏi
 router.put(
   "/:id",
-  authMiddleware,
+  authMiddleware(),
   upload.single("file"),
   questionController.updateQuestion
 );
@@ -25,14 +25,14 @@ router.put(
 // Xóa câu hỏi (user)
 router.delete(
   "/:id",
-  authMiddleware,
+  authMiddleware(),
   questionController.deleteMyQuestion
 );
 
 // Xóa câu hỏi (admin)
 router.delete(
   "/admin/:id",
-  authMiddleware,
+  authMiddleware(),
   questionController.deleteQuestionByAdmin
 );
 
@@ -46,7 +46,7 @@ router.get(
 // Lấy danh sách câu hỏi của mình
 router.get(
   "/my",
-  authMiddleware,
+  authMiddleware(),
   questionController.getMyQuestions
 );
 
@@ -66,21 +66,21 @@ router.get(
 router.post(
   "/:id/follow-up",
   upload.single("file"),
-  authMiddleware,
+  authMiddleware(),
   questionController.askFollowUpQuestion
 );
 
 // Danh sách log xóa
 router.get(
   "/logs/deletion",
-  authMiddleware,
+  authMiddleware(),
   questionController.getDeletionLogs
 );
 
 // Chi tiết log xóa
 router.get(
   "/logs/deletion/:id",
-  authMiddleware,
+  authMiddleware(),
   questionController.getDeletionLogDetail
 );
 

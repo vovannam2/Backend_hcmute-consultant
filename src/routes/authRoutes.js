@@ -33,7 +33,7 @@ router.get("/user-only", authMiddleware(["USER"]), (req, res) => {
 
 router.get(
   "/consultant",
-  authMiddleware(["TUVANVIEN", "TRUONGBANTUVAN"]),
+  authMiddleware(["TUVANVIEN", "TRUONGBANTUVAN",]),
   (req, res) => {
     res.json({ message: "Hello Consultant" });
   }
