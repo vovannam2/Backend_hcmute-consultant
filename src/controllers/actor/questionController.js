@@ -5,7 +5,6 @@ const makeResponse = (status, message, data = null) => ({
   message,
   data,
 });
-
 // POST /user/question/
 exports.createQuestion = async (req, res) => {
   try {

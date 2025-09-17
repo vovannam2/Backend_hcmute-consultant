@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 
 exports.createQuestion = async (data, userId) => {
   const { departmentId, fieldId, roleAsk, title, content, statusPublic, fileName } = data;
-
+  
   const department = await Department.findById(departmentId);
   if (!department) throw new Error("Không tìm thấy phòng ban");
 
