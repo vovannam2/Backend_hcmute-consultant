@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const questionController = require("../controllers/actor/questionController");
 const authMiddleware = require("../middleware/authMiddleware");
-const upload = require("../middleware/upload");
+const { uploadImage } = require("../config/cloudinary");
 const parseBoolean = require("../middleware/parseBoolean");
 
 // Tạo câu hỏi mới
@@ -10,7 +10,7 @@ router.post(
   "/",
   authMiddleware(),
   parseBoolean,
-  upload.single("file"),
+  uploadImage.single("file"),
   questionController.createQuestion
 );
 
@@ -18,7 +18,7 @@ router.post(
 router.put(
   "/:id",
   authMiddleware(),
-  upload.single("file"),
+  uploadImage.single("file"),
   questionController.updateQuestion
 );
 
@@ -65,7 +65,7 @@ router.get(
 // Tạo câu hỏi bổ sung (follow-up question)
 router.post(
   "/:id/follow-up",
-  upload.single("file"),
+  uploadImage.single("file"),
   authMiddleware(),
   questionController.askFollowUpQuestion
 );

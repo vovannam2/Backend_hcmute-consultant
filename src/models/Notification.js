@@ -1,13 +1,15 @@
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
-  // Người gửi và nhận
+  // Người gửi và nhận (ObjectId tham chiếu đến User)
   senderId: { 
-    type: Number, 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
     required: true 
   },
   receiverId: { 
-    type: Number, 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
     required: true 
   },
   

@@ -12,9 +12,9 @@ const questionSchema = new mongoose.Schema({
     required: true, 
     maxlength: 900 
   },
-  fileName: { 
+  fileUrl: { 
     type: String, 
-    maxlength: 255 
+    maxlength: 500
   },
   
   // Thông tin người hỏi
@@ -37,7 +37,7 @@ const questionSchema = new mongoose.Schema({
   },
   roleAsk: { 
     type: String, 
-    enum: ['SINHVIEN', 'GIANGVIEN', 'NHANVIEN'], 
+    enum: ['SINHVIEN', 'GIANGVIEN', 'NHANVIEN', 'USER'], 
     required: true 
   },
   
