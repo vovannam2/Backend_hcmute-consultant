@@ -1,4 +1,5 @@
 const Question = require("../../models/Question");
+const Answer = require("../../models/Answer");
 const Department = require("../../models/Department");
 const Field = require("../../models/Field");
 const DeletionLog = require("../../models/DeletionLog");
@@ -6,8 +7,8 @@ const Notification = require("../../models/Notification");
 const mongoose = require("mongoose");
 
 exports.createQuestion = async (data, userId) => {
-  const { departmentId, fieldId, roleAsk, title, content, statusPublic, fileName } = data;
-  
+  const { departmentId, fieldId, roleAsk, title, content, statusPublic, fileUrl } = data;
+
   const department = await Department.findById(departmentId);
   if (!department) throw new Error("Không tìm thấy phòng ban");
 
@@ -17,7 +18,7 @@ exports.createQuestion = async (data, userId) => {
   const question = new Question({
     title,
     content,
-    fileName,
+    fileUrl,
     user: userId,
     department: departmentId,
     field: fieldId,
@@ -49,7 +50,7 @@ exports.updateQuestion = async (questionId, data, userId) => {
     field: data.fieldId ?? question.field,
     roleAsk: data.roleAsk ?? question.roleAsk,
     statusPublic: data.statusPublic ?? question.statusPublic,
-    fileName: data.fileName || question.fileName,
+    fileUrl: data.fileUrl || question.fileUrl,
   });
 
   await question.save();
@@ -78,7 +79,7 @@ exports.deleteQuestion = async (questionId, userId, reason) => {
   return true;
 };
 
-exports.createFollowUpQuestion = async (data, userId, fileName) => {
+exports.createFollowUpQuestion = async (data, userId, fileUrl) => {
   const { parentQuestionId, title, content } = data;
 
   const parent = await Question.findById(parentQuestionId);
@@ -89,7 +90,7 @@ exports.createFollowUpQuestion = async (data, userId, fileName) => {
     content,
     parentQuestion: parent._id,
     user: userId,
-    fileName,
+    fileUrl,
     department: parent.department,
     field: parent.field,
     roleAsk: parent.roleAsk,
@@ -197,12 +198,20 @@ exports.deleteQuestionByAdmin = async (questionId, user, reason) => {
 };
 
 exports.getQuestionById = async (questionId) => {
-  const question = await Question.findById(questionId).populate(
-    "user department field subQuestions"
-  );
+  const question = await Question.findById(questionId)
+    .populate("user department field subQuestions answers");
+
   if (!question) throw new Error("Không tìm thấy câu hỏi");
+
+  if (!question.answers || question.answers.length === 0) {
+    question.statusAnswer = false;
+  } else {
+    question.statusAnswer = true;
+  }
+
   return question;
 };
+
 
 //Search questions by title and content
 exports.searchQuestions = async (keyword, query) => {

@@ -10,6 +10,8 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const questionRoutes = require("./routes/questionRoutes");
+const conversationRoutes = require("./routes/conversationRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 
 const app = express();
 
@@ -23,6 +25,8 @@ app.use(morgan("dev"));        // Log request ra console
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/questions", questionRoutes);
+app.use("/api/conversations", conversationRoutes);
+app.use("/api", messageRoutes);
 
 
 // Health check

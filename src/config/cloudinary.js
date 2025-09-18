@@ -1,24 +1,43 @@
-const cloudinary = require("cloudinary").v2;
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
 
-// Config Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Tạo storage cho multer
-const storage = new CloudinaryStorage({
+// Storage cho avatar hoặc các route khác
+const storageImage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "avatars", // thư mục trong cloudinary
+    folder: "avatars",
     allowed_formats: ["jpg", "png", "jpeg"],
-    transformation: [{ width: 500, height: 500, crop: "limit" }],
   },
 });
+const uploadImage = multer({ storage: storageImage });
 
-const uploadCloud = multer({ storage });
+// Storage riêng cho chat (ảnh hoặc file)
+const storageChat = new CloudinaryStorage({
+  cloudinary,
+  params: (req, file) => {
+    if (file.fieldname === "image") {
+      return {
+        folder: "chat/images",
+        allowed_formats: ["jpg", "png", "jpeg"],
+      };
+    } else if (file.fieldname === "file") {
+      return {
+        folder: "chat/files",
+        resource_type: "raw",
+        public_id: file.originalname.split(".")[0],
+        format: file.originalname.split(".").pop(),
+      };
+    }
+    return {};
+  },
+});
+const uploadChat = multer({ storage: storageChat });
 
-module.exports = { cloudinary, uploadCloud };
+module.exports = { cloudinary, uploadImage, uploadChat };

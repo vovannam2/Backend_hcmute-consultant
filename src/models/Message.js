@@ -14,11 +14,11 @@ const messageSchema = new mongoose.Schema({
     ref: 'User', 
     required: true 
   },
-  receiver: { 
+  // Gửi cho tất cả member
+  receivers: [{ 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
-  },
+    ref: 'User' 
+  }],
   
   // Nội dung tin nhắn
   message: { 
@@ -28,9 +28,6 @@ const messageSchema = new mongoose.Schema({
     type: String 
   },
   fileUrl: { 
-    type: String 
-  },
-  typeUrl: { 
     type: String 
   },
   

@@ -10,7 +10,10 @@ exports.createQuestion = async (req, res) => {
   try {
     const userId = req.user.id;
     const question = await questionService.createQuestion(
-      { ...req.body, fileName: req.file?.filename },
+      { 
+        ...req.body, 
+        fileUrl: req.file?.path || null
+      },
       userId
     );
     res.json(makeResponse("success", "Đặt câu hỏi thành công.", question));
@@ -25,7 +28,10 @@ exports.updateQuestion = async (req, res) => {
     const userId = req.user.id;
     const question = await questionService.updateQuestion(
       req.params.id,
-      { ...req.body, fileName: req.file?.filename },
+      { 
+        ...req.body, 
+        fileUrl: req.file?.path || null
+      },
       userId
     );
     res.json(makeResponse("success", "Cập nhật thành công.", question));
@@ -51,16 +57,18 @@ exports.askFollowUpQuestion = async (req, res) => {
     const userId = req.user.id;
     const parentQuestionId = req.params.id;
     const followUp = await questionService.createFollowUpQuestion(
-      { ...req.body, parentQuestionId },
-      userId,
-      req.file?.filename
+      { 
+        ...req.body, 
+        parentQuestionId,
+        fileUrl: req.file?.path || null
+      },
+      userId
     );
     res.json(makeResponse("success", "Đặt câu hỏi phụ thành công.", followUp));
   } catch (err) {
     res.status(400).json(makeResponse("error", err.message));
   }
 };
-
 
 // GET /questions?statusAnswer=false&statusPublic=true
 exports.getQuestions = async (req, res) => {
@@ -148,7 +156,7 @@ exports.deleteQuestionByAdmin = async (req, res) => {
 // GET /question/detail
 exports.getQuestionDetail = async (req, res) => {
   try {
-    const { id } = req.params; // lấy từ params thay vì query
+    const { id } = req.params;
     const question = await questionService.getQuestionById(id);
 
     res.json(makeResponse("success", "Chi tiết câu hỏi.", question));
