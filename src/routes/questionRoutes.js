@@ -3,6 +3,7 @@ const router = express.Router();
 const questionController = require("../controllers/actor/questionController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { uploadImage } = require("../config/cloudinary");
+const { uploadFile } = require("../config/cloudinary");
 const parseBoolean = require("../middleware/parseBoolean");
 
 // Tạo câu hỏi mới
@@ -82,6 +83,44 @@ router.get(
   "/logs/deletion/:id",
   authMiddleware(),
   questionController.getDeletionLogDetail
+);
+
+const onlyConsultant = authMiddleware(["TUVANVIEN"]);
+
+// Xem câu hỏi chờ trả lời
+router.get("/consultant/questions/pending", onlyConsultant, questionController.getPendingQuestions);
+
+// Xem câu hỏi đã trả lời
+router.get("/consultant/questions/answered", onlyConsultant, questionController.getAnsweredQuestions);
+
+// Trả lời câu hỏi
+router.post(
+  "/consultant/answers",
+  onlyConsultant,
+  uploadFile.single("file"),
+  questionController.createAnswer
+);
+
+// Chỉnh sửa câu trả lời
+router.put(
+  "/consultant/answers/:id",
+  onlyConsultant,
+  uploadFile.single("file"),
+  questionController.updateAnswer
+);
+
+// Yêu cầu đánh giá câu trả lời
+router.post(
+  "/consultant/answers/:id/request-review",
+  onlyConsultant,
+  questionController.requestAnswerReview
+);
+
+// Xem chi tiết câu hỏi cho tư vấn viên
+router.get(
+  "/consultant/questions/:id",
+  onlyConsultant,
+  questionController.getQuestionDetailForConsultant
 );
 
 module.exports = router;

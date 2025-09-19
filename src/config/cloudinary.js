@@ -40,4 +40,26 @@ const storageChat = new CloudinaryStorage({
 });
 const uploadChat = multer({ storage: storageChat });
 
-module.exports = { cloudinary, uploadImage, uploadChat };
+const storageFile = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    if (file.mimetype.startsWith("image/")) {
+      // Nếu là ảnh
+      return {
+        folder: "uploads/images",
+        resource_type: "image",
+        allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+      };
+    }
+    // Nếu là tệp bất kỳ
+    return {
+      folder: "uploads/files",
+      resource_type: "raw",
+      public_id: file.originalname.split(".")[0],
+      format: file.originalname.split(".").pop(),
+    };
+  },
+});
+const uploadFile = multer({ storage: storageFile });
+
+module.exports = { cloudinary, uploadImage, uploadChat, uploadFile };

@@ -185,3 +185,118 @@ exports.getDeletionLogDetail = async (req, res) => {
     res.status(400).json(makeResponse("error", err.message));
   }
 };
+
+/**
+ * GET /api/consultant/questions/pending
+ * Danh sách câu hỏi chờ trả lời
+ */
+exports.getPendingQuestions = async (req, res) => {
+  try {
+    const { data, total, page, size } =
+      await questionService.getPendingQuestions(req.query);
+
+    res.json(
+      makeResponse("success", "Lấy danh sách câu hỏi chờ trả lời thành công.", {
+        content: data,
+        totalElements: total,
+        page,
+        size,
+      })
+    );
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+/**
+ * GET /api/consultant/questions/answered
+ * Danh sách câu hỏi đã trả lời
+ */
+exports.getAnsweredQuestions = async (req, res) => {
+  try {
+    const { data, total, page, size } =
+      await questionService.getAnsweredQuestions(req.query);
+
+    res.json(
+      makeResponse("success", "Lấy danh sách câu hỏi đã trả lời thành công.", {
+        content: data,
+        totalElements: total,
+        page,
+        size,
+      })
+    );
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+/**
+ * POST /api/consultant/answers
+ * Tư vấn viên trả lời câu hỏi
+ */
+exports.createAnswer = async (req, res) => {
+  try {
+    const consultantId = req.user.id;
+    const answer = await questionService.createAnswer(
+      {
+        ...req.body,
+        fileUrl: req.file?.path || null,
+      },
+      consultantId
+    );
+
+    res.json(makeResponse("success", "Trả lời câu hỏi thành công.", answer));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+/**
+ * PUT /api/consultant/answers/:id
+ * Chỉnh sửa câu trả lời
+ */
+exports.updateAnswer = async (req, res) => {
+  try {
+    const consultantId = req.user.id;
+    const updated = await questionService.updateAnswer(
+      req.params.id,
+      {
+        ...req.body,
+        fileUrl: req.file?.path || null,
+      },
+      consultantId
+    );
+
+    res.json(makeResponse("success", "Cập nhật câu trả lời thành công.", updated));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+/**
+ * POST /api/consultant/answers/:id/request-review
+ * Yêu cầu đánh giá câu trả lời
+ */
+exports.requestAnswerReview = async (req, res) => {
+  try {
+    const consultantId = req.user.id;
+    await questionService.requestAnswerReview(req.params.id, consultantId);
+
+    res.json(makeResponse("success", "Đã gửi yêu cầu đánh giá câu trả lời."));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+/**
+ * GET /api/consultant/questions/:id
+ * Xem chi tiết câu hỏi (dành cho tư vấn viên)
+ */
+exports.getQuestionDetailForConsultant = async (req, res) => {
+  try {
+    const question = await questionService.getQuestionDetailForConsultant(req.params.id);
+    res.json(makeResponse("success", "Chi tiết câu hỏi.", question));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};

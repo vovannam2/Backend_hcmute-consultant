@@ -260,3 +260,170 @@ exports.getDeletionLogDetail = async (id) => {
   if (!log) throw new Error("Không tìm thấy log");
   return log;
 };
+
+// ================== TƯ VẤN VIÊN ==================
+exports.getPendingQuestions = async (query) => {
+  const {
+    page = 0,
+    size = 10,
+    sortBy = "createdAt",
+    sortDir = "desc",
+    departmentId,
+    fieldId,
+    title,
+  } = query;
+
+  const filter = {
+    statusDelete: false,
+    statusApproval: false,   // chưa duyệt
+    statusAnswer: false,     // chưa có trả lời
+  };
+  if (departmentId) filter.department = departmentId;
+  if (fieldId) filter.field = fieldId;
+  if (title) filter.title = { $regex: title, $options: "i" };
+
+  const data = await Question.find(filter)
+    .sort({ [sortBy]: sortDir === "desc" ? -1 : 1 })
+    .skip(Number(page) * Number(size))
+    .limit(Number(size))
+    .select("title content createdAt statusAnswer department field user")  // chỉ lấy các field cần
+    .populate("user", "username avatarUrl")                        // chỉ 2 field
+    .populate("department", "name")
+    .populate("field", "name");
+
+  const total = await Question.countDocuments(filter);
+  return { data, total, page: Number(page), size: Number(size) };
+};
+
+exports.getAnsweredQuestions = async (query) => {
+  const {
+    page = 0,
+    size = 10,
+    sortBy = "createdAt",
+    sortDir = "desc",
+    departmentId,
+    fieldId,
+    title,
+  } = query;
+
+  const filter = {
+    statusDelete: false,
+    statusApproval: false,
+    statusAnswer: true,
+  };
+  if (departmentId) filter.department = departmentId;
+  if (fieldId) filter.field = fieldId;
+  if (title) filter.title = { $regex: title, $options: "i" };
+
+  const data = await Question.find(filter)
+  .sort({ [sortBy]: sortDir === "desc" ? -1 : 1 })
+  .skip(page * size)
+  .limit(size)
+  .select("title content createdAt statusAnswer department field user") 
+  .populate("user", "username avatarUrl")                      
+  .populate("department", "name")
+  .populate("field", "name");
+
+
+  const total = await Question.countDocuments(filter);
+  return { data, totalElements: total, page: Number(page), size: Number(size) };
+};
+
+
+// Tư vấn viên trả lời câu hỏi
+exports.createAnswer = async (data, consultantId) => {
+  const { questionId, content, fileUrl, roleConsultant, title } = data;
+
+  const question = await Question.findById(questionId);
+  if (!question || question.statusDelete)
+    throw new Error("Không tìm thấy câu hỏi");
+
+  if (question.statusAnswer) {
+    throw new Error("Câu hỏi đã được trả lời");
+  }
+
+  const answer = new Answer({
+    question: questionId,
+    user: consultantId,          
+    roleConsultant,              
+    content,
+    title,
+    file: fileUrl                
+  });
+  await answer.save();
+
+  question.statusAnswer = true;
+  await question.save();
+
+  await Notification.create({
+    senderId: consultantId,
+    receiverId: question.user,
+    content: `Câu hỏi "${question.title}" đã được tư vấn viên trả lời.`,
+    notificationType: "ANSWER",
+  });
+
+  return answer;
+};
+
+
+// Chỉnh sửa câu trả lời
+exports.updateAnswer = async (answerId, data, consultantId) => {
+  const answer = await Answer.findById(answerId);
+  if (!answer) throw new Error("Không tìm thấy câu trả lời");
+
+  //  kiểm tra quyền bằng user
+  if (String(answer.user) !== String(consultantId)) {
+    throw new Error("Không có quyền chỉnh sửa câu trả lời này");
+  }
+
+  Object.assign(answer, {
+    content: data.content ?? answer.content,
+    file: data.fileUrl || answer.file,   
+    title: data.title ?? answer.title,
+    roleConsultant: data.roleConsultant ?? answer.roleConsultant,
+  });
+
+  await answer.save();
+  return answer;
+};
+
+
+// Gửi yêu cầu đánh giá câu trả lời
+exports.requestAnswerReview = async (answerId, consultantId) => {
+  const answer = await Answer.findById(answerId).populate("question");
+  if (!answer) throw new Error("Không tìm thấy câu trả lời");
+
+   if (String(answer.user) !== String(consultantId)) {
+    throw new Error("Không có quyền yêu cầu đánh giá");
+  }
+
+  answer.statusReview = true;
+  await answer.save();
+
+  // Thông báo cho người hỏi rằng câu trả lời đã được yêu cầu đánh giá
+  await Notification.create({
+    senderId: consultantId,
+    receiverId: answer.question.user,
+    content: `Câu trả lời cho câu hỏi "${answer.question.title}" đã được gửi yêu cầu đánh giá.`,
+    notificationType: "MESSAGE",
+  });
+
+  return true;
+};
+
+// Chi tiết câu hỏi dành cho tư vấn viên
+exports.getQuestionDetailForConsultant = async (questionId) => {
+  const question = await Question.findById(questionId)
+    .populate(
+      "user",
+      // chỉ lấy những trường cần cho tư vấn viên
+      "username firstName lastName studentCode avatarUrl email phone"
+    )
+    .select(
+      "_id title content roleAsk views statusApproval statusPublic statusDelete statusAnswer createdAt updatedAt"
+    );
+
+  if (!question) throw new Error("Không tìm thấy câu hỏi");
+
+  return question;
+};
