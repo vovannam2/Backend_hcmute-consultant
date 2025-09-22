@@ -18,28 +18,6 @@ const storageImage = new CloudinaryStorage({
 });
 const uploadImage = multer({ storage: storageImage });
 
-// Storage riêng cho chat (ảnh hoặc file)
-const storageChat = new CloudinaryStorage({
-  cloudinary,
-  params: (req, file) => {
-    if (file.fieldname === "image") {
-      return {
-        folder: "chat/images",
-        allowed_formats: ["jpg", "png", "jpeg"],
-      };
-    } else if (file.fieldname === "file") {
-      return {
-        folder: "chat/files",
-        resource_type: "raw",
-        public_id: file.originalname.split(".")[0],
-        format: file.originalname.split(".").pop(),
-      };
-    }
-    return {};
-  },
-});
-const uploadChat = multer({ storage: storageChat });
-
 const storageFile = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
@@ -62,4 +40,4 @@ const storageFile = new CloudinaryStorage({
 });
 const uploadFile = multer({ storage: storageFile });
 
-module.exports = { cloudinary, uploadImage, uploadChat, uploadFile };
+module.exports = { cloudinary, uploadImage, uploadFile };

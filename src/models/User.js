@@ -67,7 +67,6 @@ const userSchema = new mongoose.Schema({
   address: addressSchema,
   
   // Thông tin tài khoản
-  isActivity: { type: Boolean, default: true },
   isOnline: { type: Boolean, default: false },
   lastActivity: { type: Date },
   

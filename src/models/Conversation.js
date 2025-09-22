@@ -34,10 +34,6 @@ const conversationSchema = new mongoose.Schema({
     type: Boolean, 
     default: true 
   },
-  isGroup: { 
-    type: Boolean, 
-    default: false 
-  },
   
   // Danh sách thành viên (cho nhóm)
   members: [{

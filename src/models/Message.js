@@ -14,7 +14,7 @@ const messageSchema = new mongoose.Schema({
     ref: 'User', 
     required: true 
   },
-  // Gửi cho tất cả member
+  
   receivers: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User' 
@@ -55,6 +55,7 @@ const messageSchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   },
+
   editedDate: { 
     type: Date 
   }
@@ -65,7 +66,7 @@ const messageSchema = new mongoose.Schema({
 // Indexes
 messageSchema.index({ conversation: 1 });
 messageSchema.index({ sender: 1 });
-messageSchema.index({ receiver: 1 });
+messageSchema.index({ receivers: 1 });
 messageSchema.index({ date: -1 });
 messageSchema.index({ messageStatus: 1 });
 
