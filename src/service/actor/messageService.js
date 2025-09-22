@@ -1,33 +1,27 @@
 const mongoose = require("mongoose");
 const Message = require("../../models/Message");
 const Conversation = require("../../models/Conversation");
+const User = require("../../models/User");
 
 exports.getMessages = async (conversationId, userId) => {
   const conversation = await Conversation.findById(conversationId);
-  if (!conversation) {
-    throw new Error("Không tìm thấy cuộc trò chuyện");
-  }
+  if (!conversation) throw new Error("Không tìm thấy cuộc hội thoại");
 
-  // Kiểm tra quyền thành viên
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
   const isMember =
-    conversation.user.equals(userId) ||
-    conversation.consultant.equals(userId) ||
-    conversation.members.some(m => m.user.equals(userId));
+    (conversation.user && conversation.user.equals(userObjectId)) ||
+    (conversation.consultant && conversation.consultant.equals(userObjectId)) ||
+    (Array.isArray(conversation.members) && conversation.members.some((m) => m.user && m.user.equals(userObjectId)));
 
   if (!isMember) {
-    throw new Error("Bạn không có quyền xem tin nhắn trong cuộc trò chuyện này");
+    throw new Error("Bạn không thuộc cuộc hội thoại này");
   }
 
-  // Lấy tin nhắn thuộc cuộc trò chuyện
-  return Message.find({
-     conversation: conversationId,
-     recalledForEveryone: false
-    })
-    .populate("sender", "firstName lastName email avatarUrl")
-    .populate("receivers", "firstName lastName email avatarUrl")
-    .sort({ createdAt: 1 });
+  return Message.find({ conversation: conversation._id })
+    .sort({ createdAt: 1 })
+    .populate("sender", "firstName lastName avatarUrl");
 };
-
 
 exports.sendMessage = async (conversationId, senderId, data) => {
   const conversation = await Conversation.findById(conversationId);
@@ -36,17 +30,17 @@ exports.sendMessage = async (conversationId, senderId, data) => {
   const senderObjectId = new mongoose.Types.ObjectId(senderId);
 
   const isMember =
-    conversation.user.equals(senderObjectId) ||
-    conversation.consultant.equals(senderObjectId) ||
-    conversation.members.some((m) => m.user.equals(senderObjectId));
+    (conversation.user && conversation.user.equals(senderObjectId)) ||
+    (conversation.consultant && conversation.consultant.equals(senderObjectId)) ||
+    (Array.isArray(conversation.members) && conversation.members.some((m) => m.user && m.user.equals(senderObjectId)));
 
   if (!isMember) throw new Error("Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này");
 
   const memberIds = [
     conversation.user,
     conversation.consultant,
-    ...conversation.members.map((m) => m.user),
-  ];
+    ...(Array.isArray(conversation.members) ? conversation.members.map((m) => m.user) : []),
+  ].filter(Boolean);
 
   const uniqueReceivers = [...new Set(memberIds.map((id) => id.toString()))]
     .filter((id) => id !== senderId.toString())
@@ -54,46 +48,43 @@ exports.sendMessage = async (conversationId, senderId, data) => {
 
   const message = new Message({
     conversation: conversation._id,
-    sender: senderId,
+    sender: new mongoose.Types.ObjectId(senderId),
     receivers: uniqueReceivers,
-    message: data.message,
+    message: data.message || null,
     imageUrl: data.imageUrl || null,
     fileUrl: data.fileUrl || null,
   });
 
   await message.save();
+  await message.populate("sender", "firstName lastName email avatarUrl");
+
+  await User.findByIdAndUpdate(senderId, { lastActivity: new Date(), isOnline: true });
+  return message;
+};
+
+exports.updateMessage = async (messageId, userId, newContent) => {
+  const message = await Message.findById(messageId);
+  if (!message) throw new Error("Tin nhắn không tồn tại");
+
+  if (message.sender.toString() !== userId.toString()) {
+    throw new Error("Bạn không có quyền sửa tin nhắn này");
+  }
+
+  message.message = newContent;
+  message.edited = true;
+  message.editedDate = Date.now();
+  await message.save();
   return message.populate("sender", "firstName lastName email avatarUrl");
 };
 
-exports.updateMessage = async (messageId, data, user) => {
+exports.deleteMessage = async (messageId, userId) => {
   const message = await Message.findById(messageId);
-  if (!message) {
-    throw new Error("Không tìm thấy tin nhắn");
+  if (!message) throw new Error("Tin nhắn không tồn tại");
+
+  if (message.sender.toString() !== userId.toString()) {
+    throw new Error("Bạn không có quyền xoá tin nhắn này");
   }
 
-  if (message.sender.toString() !== user.id.toString()) {
-    throw new Error("Bạn không có quyền chỉnh sửa tin nhắn này");
-  }
-
-  message.message = data.message || message.message;
-  message.edited = true;
-  message.editedDate = new Date();
-
-  await message.save();
-  return message;
-};
-
-exports.deleteMessage = async (messageId, user) => {
-  const message = await Message.findById(messageId);
-  if (!message) {
-    throw new Error("Không tìm thấy tin nhắn");
-  }
-
-  if (message.sender.toString() !== user.id.toString()) {
-    throw new Error("Bạn không có quyền thu hồi tin nhắn này");
-  }
-
-  message.recalledForEveryone = true;
-  await message.save();
-  return message;
+  await message.deleteOne();
+  return { _id: messageId, conversation: message.conversation };
 };
