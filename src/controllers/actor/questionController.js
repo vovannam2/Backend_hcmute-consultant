@@ -193,7 +193,7 @@ exports.getDeletionLogDetail = async (req, res) => {
 exports.getPendingQuestions = async (req, res) => {
   try {
     const { data, total, page, size } =
-      await questionService.getPendingQuestions(req.query);
+      await questionService.getPendingQuestions(req.query, req.user);
 
     res.json(
       makeResponse("success", "Lấy danh sách câu hỏi chờ trả lời thành công.", {
@@ -215,7 +215,7 @@ exports.getPendingQuestions = async (req, res) => {
 exports.getAnsweredQuestions = async (req, res) => {
   try {
     const { data, total, page, size } =
-      await questionService.getAnsweredQuestions(req.query);
+      await questionService.getAnsweredQuestions(req.query, req.user);
 
     res.json(
       makeResponse("success", "Lấy danh sách câu hỏi đã trả lời thành công.", {

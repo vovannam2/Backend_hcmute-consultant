@@ -4,6 +4,7 @@ const Department = require("../../models/Department");
 const Field = require("../../models/Field");
 const DeletionLog = require("../../models/DeletionLog");
 const Notification = require("../../models/Notification");
+const User = require("../../models/User"); 
 const mongoose = require("mongoose");
 
 exports.createQuestion = async (data, userId) => {
@@ -262,23 +263,26 @@ exports.getDeletionLogDetail = async (id) => {
 };
 
 // ================== TƯ VẤN VIÊN ==================
-exports.getPendingQuestions = async (query) => {
+exports.getPendingQuestions = async (query, user) => {
   const {
     page = 0,
     size = 10,
     sortBy = "createdAt",
     sortDir = "desc",
-    departmentId,
     fieldId,
     title,
   } = query;
 
   const filter = {
     statusDelete: false,
-    statusApproval: false,   // chưa duyệt
-    statusAnswer: false,     // chưa có trả lời
+    statusApproval: false, // chưa duyệt
+    statusAnswer: false,   // chưa có trả lời
   };
-  if (departmentId) filter.department = departmentId;
+
+    if (user && user.role === "TUVANVIEN") {
+    filter.department = user.department;
+  }
+
   if (fieldId) filter.field = fieldId;
   if (title) filter.title = { $regex: title, $options: "i" };
 
@@ -286,16 +290,17 @@ exports.getPendingQuestions = async (query) => {
     .sort({ [sortBy]: sortDir === "desc" ? -1 : 1 })
     .skip(Number(page) * Number(size))
     .limit(Number(size))
-    .select("title content createdAt statusAnswer department field user")  // chỉ lấy các field cần
-    .populate("user", "username avatarUrl")                        // chỉ 2 field
+    .select("title content createdAt statusAnswer department field user")
+    .populate("user", "username avatarUrl")
     .populate("department", "name")
     .populate("field", "name");
 
   const total = await Question.countDocuments(filter);
+
   return { data, total, page: Number(page), size: Number(size) };
 };
 
-exports.getAnsweredQuestions = async (query) => {
+exports.getAnsweredQuestions = async (query, user) => {
   const {
     page = 0,
     size = 10,
@@ -311,7 +316,9 @@ exports.getAnsweredQuestions = async (query) => {
     statusApproval: false,
     statusAnswer: true,
   };
-  if (departmentId) filter.department = departmentId;
+  if (user && user.role === "TUVANVIEN") {
+    filter.department = user.department;
+  }
   if (fieldId) filter.field = fieldId;
   if (title) filter.title = { $regex: title, $options: "i" };
 
@@ -393,17 +400,30 @@ exports.requestAnswerReview = async (answerId, consultantId) => {
   const answer = await Answer.findById(answerId).populate("question");
   if (!answer) throw new Error("Không tìm thấy câu trả lời");
 
-   if (String(answer.user) !== String(consultantId)) {
+  // Kiểm tra quyền: chỉ người tạo answer (tư vấn viên) mới được yêu cầu review
+  if (String(answer.user) !== String(consultantId)) {
     throw new Error("Không có quyền yêu cầu đánh giá");
   }
 
+  // Đánh dấu answer cần review
   answer.statusReview = true;
   await answer.save();
 
-  // Thông báo cho người hỏi rằng câu trả lời đã được yêu cầu đánh giá
+  // 🔹 Tìm trưởng ban tư vấn cùng khoa/phòng ban của câu hỏi
+  const departmentId = answer.question.department;
+  const departmentHead = await User.findOne({
+    role: "TRUONGBANTUVAN",
+    department: departmentId
+  });
+
+  if (!departmentHead) {
+    throw new Error("Không tìm thấy Trưởng ban tư vấn trong khoa/phòng ban này");
+  }
+
+  // Gửi thông báo cho Trưởng ban tư vấn
   await Notification.create({
     senderId: consultantId,
-    receiverId: answer.question.user,
+    receiverId: departmentHead._id,
     content: `Câu trả lời cho câu hỏi "${answer.question.title}" đã được gửi yêu cầu đánh giá.`,
     notificationType: "MESSAGE",
   });

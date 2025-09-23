@@ -164,14 +164,14 @@ const login = async ({ email, password }) => {
 
   // Access token sống ngắn
   const accessToken = jwt.sign(
-    { id: user._id, role: user.role },
+    { id: user._id, role: user.role, department: user.department },
     process.env.JWT_SECRET,
     { expiresIn: "15m" }
   );
 
   // Refresh token sống dài
   const refreshToken = jwt.sign(
-    { id: user._id },
+    { id: user._id, role: user.role, department: user.department },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: "7d" }
   );
@@ -183,7 +183,7 @@ const login = async ({ email, password }) => {
   return {
     accessToken,
     refreshToken,
-    user: { id: user._id, email: user.email, role: user.role }
+    user: { id: user._id, email: user.email, role: user.role , department: user.department}
   };
 };
 

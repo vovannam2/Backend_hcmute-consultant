@@ -53,9 +53,11 @@ const userSchema = new mongoose.Schema({
   lastName: { type: String, maxlength: 50 },
   phone: { 
     type: String, 
-    unique: true, 
-    maxlength: 10 
+    //unique: true, 
+    maxlength: 10,
+    default: null
   },
+  
   avatarUrl: { type: String, maxlength: 900 },
   gender: { 
     type: String, 
@@ -112,6 +114,11 @@ userSchema.index({ username: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ department: 1 });
 userSchema.index({ isActivity: 1 });
+
+userSchema.index(
+  { phone: 1 },
+  { unique: true, partialFilterExpression: { phone: { $type: "string" } } }
+);
 
 // Virtual để lấy tên đầy đủ
 userSchema.virtual('fullName').get(function() {

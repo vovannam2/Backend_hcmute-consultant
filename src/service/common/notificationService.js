@@ -1,38 +1,26 @@
-// const Notification = require('../models/Notification');
-// const User = require('../models/User');
+const Notification = require("../../models/Notification");
 
-// const notificationService = {
-//   async sendNotification({ senderId, receiverId, content, notificationType }) {
-//     try {
-//       const notification = await Notification.create({
-//         senderId,
-//         receiverId,
-//         content,
-//         notificationType
-//       });
-//       return notification;
-//     } catch (err) {
-//       console.error('Error sending notification:', err);
-//       throw err;
-//     }
-//   },
+exports.getNotifications = async (userId) => {
+  return await Notification.find({ receiverId: userId })
+    .sort({ createdAt: -1 })
+    .populate("senderId", "username avatarUrl")
+    .populate("receiverId", "username");
+};
 
-//   /**
-//    * Lấy danh sách thông báo của 1 user
-//    */
-//   async getUserNotifications(userId) {
-//     return Notification.find({ receiverId: userId })
-//       .sort({ createdAt: -1 })
-//       .populate('senderId', 'firstName lastName email avatarUrl')
-//       .lean();
-//   },
+exports.markAsRead = async (notificationId, userId) => {
+  const notification = await Notification.findOneAndUpdate(
+    { _id: notificationId, receiverId: userId },
+    { status: "READ" },
+    { new: true }
+  );
+  if (!notification) throw new Error("Không tìm thấy thông báo hoặc không có quyền");
+  return notification;
+};
 
-//   /**
-//    * Đánh dấu đã đọc
-//    */
-//   async markAsRead(notificationId) {
-//     return Notification.findByIdAndUpdate(notificationId, { status: 'READ' }, { new: true });
-//   }
-// };
-
-// module.exports = notificationService;
+exports.markAllAsRead = async (userId) => {
+  const result = await Notification.updateMany(
+    { receiverId: userId, status: "UNREAD" },
+    { status: "READ" }
+  );
+  return result.modifiedCount;
+};
