@@ -29,7 +29,7 @@ const notificationSchema = new mongoose.Schema({
   // Loại thông báo
   notificationType: { 
     type: String, 
-    enum: ['QUESTION', 'ANSWER', 'RATING', 'CONSULTATION', 'MESSAGE', 'SYSTEM'], 
+    enum: ['QUESTION', 'ANSWER', 'RATING', 'CONSULTATION', 'MESSAGE', 'SYSTEM', 'LIKE'], 
     required: true 
   },
   

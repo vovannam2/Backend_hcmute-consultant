@@ -4,7 +4,8 @@ const Department = require("../../models/Department");
 const Field = require("../../models/Field");
 const DeletionLog = require("../../models/DeletionLog");
 const Notification = require("../../models/Notification");
-const User = require("../../models/User"); 
+const LikeRecord = require("../../models/likeRecord");
+const User = require("../../models/User");
 const mongoose = require("mongoose");
 
 exports.createQuestion = async (data, userId) => {
@@ -279,7 +280,7 @@ exports.getPendingQuestions = async (query, user) => {
     statusAnswer: false,   // chưa có trả lời
   };
 
-    if (user && user.role === "TUVANVIEN") {
+  if (user && user.role === "TUVANVIEN") {
     filter.department = user.department;
   }
 
@@ -323,13 +324,13 @@ exports.getAnsweredQuestions = async (query, user) => {
   if (title) filter.title = { $regex: title, $options: "i" };
 
   const data = await Question.find(filter)
-  .sort({ [sortBy]: sortDir === "desc" ? -1 : 1 })
-  .skip(page * size)
-  .limit(size)
-  .select("title content createdAt statusAnswer department field user") 
-  .populate("user", "username avatarUrl")                      
-  .populate("department", "name")
-  .populate("field", "name");
+    .sort({ [sortBy]: sortDir === "desc" ? -1 : 1 })
+    .skip(page * size)
+    .limit(size)
+    .select("title content createdAt statusAnswer department field user")
+    .populate("user", "username avatarUrl")
+    .populate("department", "name")
+    .populate("field", "name");
 
 
   const total = await Question.countDocuments(filter);
@@ -351,11 +352,11 @@ exports.createAnswer = async (data, consultantId) => {
 
   const answer = new Answer({
     question: questionId,
-    user: consultantId,          
-    roleConsultant,              
+    user: consultantId,
+    roleConsultant,
     content,
     title,
-    file: fileUrl                
+    file: fileUrl
   });
   await answer.save();
 
@@ -385,7 +386,7 @@ exports.updateAnswer = async (answerId, data, consultantId) => {
 
   Object.assign(answer, {
     content: data.content ?? answer.content,
-    file: data.fileUrl || answer.file,   
+    file: data.fileUrl || answer.file,
     title: data.title ?? answer.title,
     roleConsultant: data.roleConsultant ?? answer.roleConsultant,
   });
@@ -447,3 +448,108 @@ exports.getQuestionDetailForConsultant = async (questionId) => {
 
   return question;
 };
+
+// LIKE QUESTION
+exports.likeQuestion = async (questionId, userId) => {
+  const question = await Question.findById(questionId);
+  if (!question) throw new Error("Không tìm thấy câu hỏi");
+
+  const like = await LikeRecord.findOneAndUpdate(
+    { targetId: questionId, userId, type: "QUESTION" },
+    { $setOnInsert: { likedAt: new Date() } },
+    { new: true, upsert: true }
+  );
+
+  if (String(question.user) !== String(userId)) {
+    await Notification.create({
+      senderId: userId,
+      receiverId: question.user,
+      content: `Câu hỏi "${question.title}" của bạn đã được thích.`,
+      notificationType: "LIKE",
+    });
+  }
+
+  return like;
+};
+
+// UNLIKE QUESTION
+exports.unlikeQuestion = async (questionId, userId) => {
+  const question = await Question.findById(questionId);
+  if (!question) throw new Error("Không tìm thấy câu hỏi");
+
+  const result = await LikeRecord.findOneAndDelete({
+    targetId: questionId,
+    userId,
+    type: "QUESTION",
+  });
+
+  if (!result) {
+    throw new Error("Bạn chưa like câu hỏi này");
+  }
+
+  return true;
+};
+
+// Đếm số like
+exports.countQuestionLikes = async (questionId) => {
+  const question = await Question.findById(questionId);
+  if (!question) throw new Error("Không tìm thấy câu hỏi");
+
+  const count = await LikeRecord.countDocuments({
+    targetId: questionId,
+    type: "QUESTION",
+  });
+
+  return count;
+};
+
+// Like câu trả lời
+exports.likeAnswer = async (answerId, userId) => {
+  const answer = await Answer.findById(answerId);
+  if (!answer) throw new Error("Không tìm thấy câu trả lời");
+
+  const like = await LikeRecord.findOneAndUpdate(
+    { targetId: answerId, userId, type: "ANSWER" },
+    { $setOnInsert: { likedAt: new Date() } },
+    { new: true, upsert: true }
+  );
+
+  if (String(answer.user) !== String(userId)) {
+    await Notification.create({
+      senderId: userId,
+      receiverId: answer.user,
+      content: `Câu trả lời của bạn cho câu hỏi "${answer.question?.title || ""}" đã được thích.`,
+      notificationType: "LIKE",
+    });
+  }
+
+  return like;
+};
+
+// Unlike câu trả lời
+exports.unlikeAnswer = async (answerId, userId) => {
+  const answer = await Answer.findById(answerId);
+  if (!answer) throw new Error("Không tìm thấy câu trả lời");
+
+  const result = await LikeRecord.findOneAndDelete({
+    targetId: answerId,
+    userId,
+    type: "ANSWER",
+  });
+
+  if (!result) {
+    throw new Error("Bạn chưa like câu trả lời này");
+  }
+
+  return true;
+};
+
+// Đếm số like của câu trả lời
+exports.countAnswerLikes = async (answerId) => {
+  const count = await LikeRecord.countDocuments({
+    targetId: answerId,
+    type: "ANSWER",
+  });
+  return count;
+};
+

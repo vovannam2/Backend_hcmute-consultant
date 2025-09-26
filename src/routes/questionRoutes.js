@@ -123,4 +123,44 @@ router.get(
   questionController.getQuestionDetailForConsultant
 );
 
+// Like câu hỏi
+router.post(
+  "/:id/like",
+  authMiddleware(),
+  questionController.likeQuestion
+);
+
+// Unlike câu hỏi
+router.delete(
+  "/:id/like",
+  authMiddleware(),
+  questionController.unlikeQuestion
+);
+
+// Đếm số like của câu hỏi
+router.get(
+  "/:id/likes/count",
+  questionController.countQuestionLikes
+);
+
+// Like câu trả lời
+router.post(
+  "/likes/answer/:id",
+  authMiddleware(),
+  questionController.likeAnswer
+);
+
+// Unlike câu trả lời
+router.delete(
+  "/likes/answer/:id",
+  authMiddleware(),
+  questionController.unlikeAnswer
+);
+
+// Đếm và lấy danh sách like của câu trả lời
+router.get(
+  "/likes/answer/count/:id",
+  questionController.getAnswerLikes
+);
+
 module.exports = router;

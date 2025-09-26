@@ -17,7 +17,7 @@ const likeRecordSchema = new mongoose.Schema({
   // Loại đối tượng được like
   type: { 
     type: String, 
-    enum: ['QUESTION', 'ANSWER', 'POST', 'COMMENT'], 
+    enum: ['QUESTION', 'ANSWER'], 
     required: true 
   },
   

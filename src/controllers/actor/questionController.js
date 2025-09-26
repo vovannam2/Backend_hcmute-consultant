@@ -300,3 +300,81 @@ exports.getQuestionDetailForConsultant = async (req, res) => {
     res.status(400).json(makeResponse("error", err.message));
   }
 };
+
+/**
+ * POST /api/likes/question/:id
+ * Người dùng like câu hỏi
+ */
+exports.likeQuestion = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const questionId = req.params.id;
+
+    const like = await questionService.likeQuestion(questionId, userId);
+
+    res.json(makeResponse("success", "Like câu hỏi thành công.", like));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+exports.unlikeQuestion = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const questionId = req.params.id;
+
+    await questionService.unlikeQuestion(questionId, userId);
+
+    res.json(makeResponse("success", "Unlike câu hỏi thành công."));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+// Đếm số like câu hỏi
+exports.countQuestionLikes = async (req, res) => {
+  try {
+    const questionId = req.params.id;
+
+    const count = await questionService.countQuestionLikes(questionId);
+
+    res.json(makeResponse("success", "Lấy số like thành công.", { count }));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+// like answer
+exports.likeAnswer = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const like = await questionService.likeAnswer(req.params.id, userId);
+    res.json(makeResponse("success", "Đã like câu trả lời.", like));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+// unlike answer
+exports.unlikeAnswer = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    await questionService.unlikeAnswer(req.params.id, userId);
+    res.json(makeResponse("success", "Đã bỏ like câu trả lời."));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
+
+// Đếm like câu trả lời
+exports.getAnswerLikes = async (req, res) => {
+  try {
+    const answerId = req.params.id;
+
+    const count = await questionService.countAnswerLikes(answerId);
+
+    res.json(makeResponse("success", "Lấy số like thành công.", { count }));
+  } catch (err) {
+    res.status(400).json(makeResponse("error", err.message));
+  }
+};
