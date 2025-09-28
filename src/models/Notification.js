@@ -38,6 +38,17 @@ const notificationSchema = new mongoose.Schema({
     type: String, 
     enum: ['UNREAD', 'READ'], 
     default: 'UNREAD' 
+  },
+
+  questionId: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Question',
+    required: false
+  },
+  answerId: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Answer',
+    required: false
   }
 }, {
   timestamps: true
@@ -48,5 +59,7 @@ notificationSchema.index({ receiverId: 1 });
 notificationSchema.index({ status: 1 });
 notificationSchema.index({ time: -1 });
 notificationSchema.index({ notificationType: 1 });
+notificationSchema.index({ questionId: 1 });
+notificationSchema.index({ answerId: 1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

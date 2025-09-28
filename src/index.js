@@ -14,6 +14,7 @@ const conversationRoutes = require("./routes/conversationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const notificationRoutes = require("./routes/NotificationRoutes");
 const managerRoutes = require("./routes/managerRoutes");
+const forwardQuestionRoutes = require("./routes/forwardQuestionRoutes");
 
 // Socket handlers
 const userSocket = require("./socket/userSocket");
@@ -41,6 +42,7 @@ app.use("/api/questions", questionRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/manager", managerRoutes);
+app.use("/api/forward", forwardQuestionRoutes);
 app.use("/api", messageRoutes);
 
 // Health check
