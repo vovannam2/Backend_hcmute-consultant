@@ -376,6 +376,7 @@ exports.createAnswer = async (data, consultantId) => {
     receiverId: question.user,
     content: `Câu hỏi "${question.title}" đã được tư vấn viên trả lời.`,
     notificationType: "ANSWER",
+    answerId: answer._id
   });
 
   return answer;
@@ -435,6 +436,7 @@ exports.requestAnswerReview = async (answerId, consultantId) => {
     receiverId: departmentHead._id,
     content: `Câu trả lời cho câu hỏi "${answer.question.title}" đã được gửi yêu cầu đánh giá.`,
     notificationType: "MESSAGE",
+    answerId: answer._id
   });
 
   return true;
@@ -474,6 +476,7 @@ exports.likeQuestion = async (questionId, userId) => {
       receiverId: question.user,
       content: `Câu hỏi "${question.title}" của bạn đã được thích.`,
       notificationType: "LIKE",
+      questionId: question._id
     });
   }
 
@@ -528,6 +531,7 @@ exports.likeAnswer = async (answerId, userId) => {
       receiverId: answer.user,
       content: `Câu trả lời của bạn cho câu hỏi "${answer.question?.title || ""}" đã được thích.`,
       notificationType: "LIKE",
+      answerId: answer._id
     });
   }
 

@@ -226,7 +226,7 @@ const getProfile = async (userId) => {
 // Cập nhật thông tin cá nhân
 const updateProfile = async (userId, data) => {
   try {
-    const allowedFields = ["username", "firstName", "lastName", "phone", "gender", "address", "avatarUrl"];
+    const allowedFields = ["username", "firstName", "lastName", "phone", "gender", "address", "avatarUrl", "studentCode"];
     const updateData = {};
 
     allowedFields.forEach((field) => {
