@@ -10,10 +10,12 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const questionRoutes = require("./routes/questionRoutes");
+const userQuestionRoutes = require("./routes/userQuestionRoutes");
 const conversationRoutes = require("./routes/conversationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const notificationRoutes = require("./routes/NotificationRoutes");
 const managerRoutes = require("./routes/managerRoutes");
+const departmentRoutes = require("./routes/departmentRoutes");
 
 // Socket handlers
 const userSocket = require("./socket/userSocket");
@@ -37,10 +39,12 @@ app.use(morgan("dev"));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/user/question", userQuestionRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/manager", managerRoutes);
+app.use("/api", departmentRoutes);
 app.use("/api", messageRoutes);
 
 // Health check

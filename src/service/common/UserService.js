@@ -51,17 +51,17 @@ const resetPassword = async ({ email, code, newPassword }) => {
 };
 
 // ===== REGISTER WITH OTP =====
-const registerRequest = async ({ firstName, lastName, email, password, role, studentCode }) => {
-  if (!firstName || !lastName || !email || !password || !role || !studentCode) {
+const registerRequest = async ({ firstName, lastName, email, password, role, studentCode, phone }) => {
+  if (!firstName || !lastName || !email || !password || !role || !studentCode || !phone) {
     throw { status: 400, message: "Missing fields" };
   }
 
   email = email.trim().toLowerCase();
   studentCode = studentCode.trim();
 
-  const exists = await User.findOne({ $or: [{ email }, { studentCode }] });
+  const exists = await User.findOne({ $or: [{ email }, { studentCode }, { phone }] });
   if (exists && exists.isVerified) {
-    throw { status: 409, message: "Email hoặc StudentCode đã được đăng ký" };
+    throw { status: 409, message: "Email, StudentCode hoặc Số điện thoại đã được đăng ký" };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -81,6 +81,7 @@ const registerRequest = async ({ firstName, lastName, email, password, role, stu
     password: passwordHash,
     role,
     studentCode,
+    phone,
     expiresAt,
     attempts: 0,
   });
@@ -114,9 +115,10 @@ const registerVerify = async ({ email, code }) => {
     throw { status: 400, message: "OTP không đúng" };
   }
 
-  if (!otpDoc.password || !otpDoc.role || !otpDoc.studentCode) {
-    throw { status: 500, message: "OTP record invalid (thiếu password hash, role hoặc studentCode)" };
-  }
+  // OTP chỉ cần kiểm tra email + code, không cần validate các field khác
+  // if (!otpDoc.password || !otpDoc.role || !otpDoc.studentCode || !otpDoc.phone) {
+  //   throw { status: 500, message: "OTP record invalid (thiếu password hash, role, studentCode hoặc phone)" };
+  // }
 
   let user = await User.findOne({ email });
   if (user) {
@@ -125,6 +127,7 @@ const registerVerify = async ({ email, code }) => {
     user.password = otpDoc.password || user.password;
     user.role = otpDoc.role || user.role;
     user.studentCode = otpDoc.studentCode || user.studentCode;
+    user.phone = otpDoc.phone || user.phone;
     user.isVerified = true;
     await user.save();
   } else {
@@ -136,6 +139,7 @@ const registerVerify = async ({ email, code }) => {
       password: otpDoc.password,
       role: otpDoc.role,
       studentCode: otpDoc.studentCode,
+      phone: otpDoc.phone,
       isVerified: true,
     });
   }
@@ -164,14 +168,26 @@ const login = async ({ email, password }) => {
 
   // Access token sống ngắn
   const accessToken = jwt.sign(
-    { id: user._id, role: user.role, department: user.department },
+    {
+      sub: String(user._id),
+      id: String(user._id),
+      role: user.role,
+      authorities: [user.role],
+      department: user.department,
+    },
     process.env.JWT_SECRET,
     { expiresIn: "15m" }
   );
 
   // Refresh token sống dài
   const refreshToken = jwt.sign(
-    { id: user._id, role: user.role, department: user.department },
+    {
+      sub: String(user._id),
+      id: String(user._id),
+      role: user.role,
+      authorities: [user.role],
+      department: user.department,
+    },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: "7d" }
   );
@@ -204,12 +220,18 @@ const refreshToken = async (token) => {
 
   // Cấp lại accessToken mới
   const newAccessToken = jwt.sign(
-    { id: user._id, role: user.role },
+    {
+      sub: String(user._id),
+      id: String(user._id),
+      role: user.role,
+      authorities: [user.role],
+      department: user.department,
+    },
     process.env.JWT_SECRET,
     { expiresIn: "15m" }
   );
 
-  return { accessToken: newAccessToken };
+  return { accessToken: newAccessToken, refreshToken: token };
 };
 
 const getProfile = async (userId) => {

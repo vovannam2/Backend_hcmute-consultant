@@ -1,66 +1,68 @@
 const UserService = require("../../service/common/UserService");
+const { DataResponse, ExceptionResponse } = require("../../utils/response");
 
 const forgotPassword = async (req, res) => {
   try {
     const result = await UserService.forgotPassword(req.body);
-    res.json(result);
+    return res.json(new DataResponse(result, "Gửi OTP thành công", 'success'));
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 const verifyOtp = async (req, res) => {
   try {
     const result = await UserService.verifyOtp(req.body);
-    res.json(result);
+    return res.json(new DataResponse(result, "Xác thực OTP thành công", 'success'));
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 const resetPassword = async (req, res) => {
   try {
     const result = await UserService.resetPassword(req.body);
-    res.json(result);
+    return res.json(new DataResponse(result, "Đặt lại mật khẩu thành công", 'success'));
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 const registerRequest = async (req, res) => {
   try {
     const result = await UserService.registerRequest(req.body);
-    res.json(result);
+    return res.json(new DataResponse(result, "Đăng ký - gửi OTP thành công", 'success'));
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 const registerVerify = async (req, res) => {
   try {
     const result = await UserService.registerVerify(req.body);
-    res.json(result);
+    return res.json(new DataResponse(result, "Đăng ký thành công", 'success'));
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 const login = async (req, res) => {
   try {
     const result = await UserService.login(req.body);
-    res.json(result);
+    const expiresIn = 15 * 60; // seconds
+    return res.json(new DataResponse({ ...result, expiresIn }, "Login successful", 'success'));
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 const refreshToken = async (req, res) => {
   try {
-    const { token } = req.body;
-    const result = await UserService.refreshToken(token);
-    return res.json(result);
+    const { refreshToken } = req.body;
+    const result = await UserService.refreshToken(refreshToken);
+    return res.json(new DataResponse(result, "Refresh successful", 'success'));
   } catch (err) {
-    return res.status(err.status || 500).json({ error: err.message });
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 

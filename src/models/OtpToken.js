@@ -36,6 +36,7 @@ const OtpTokenSchema = new mongoose.Schema(
     password:  { type: String },      // thêm
     role:      { type: String },      // thêm  <<=== QUAN TRỌNG
     studentCode: { type: String },
+    phone:     { type: String },      // thêm
     
     expiresAt: { type: Date, required: true },
     attempts:  { type: Number, default: 0 }

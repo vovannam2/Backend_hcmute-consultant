@@ -15,7 +15,8 @@ function authMiddleware(allowedRoles = []) {
     try {
       // Giải mã token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded; 
+      req.user = decoded;
+      req.userId = decoded.sub || decoded.id;
 
       // Nếu có quy định role thì kiểm tra
       if (allowedRoles.length > 0 && !allowedRoles.includes(req.user.role)) {
