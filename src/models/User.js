@@ -45,8 +45,9 @@ const userSchema = new mongoose.Schema({
   // Thông tin cá nhân
   studentCode: { 
     type: String, 
-    unique: true, 
-    maxlength: 50 
+    //unique: true,
+    maxlength: 50,
+    default: null
   },
   schoolName: { type: String, maxlength: 255 },
   firstName: { type: String, maxlength: 50 },
@@ -118,6 +119,11 @@ userSchema.index({ isActivity: 1 });
 userSchema.index(
   { phone: 1 },
   { unique: true, partialFilterExpression: { phone: { $type: "string" } } }
+);
+
+userSchema.index(
+  { studentCode: 1 },
+  { unique: true, partialFilterExpression: { studentCode: { $type: "string" } } }
 );
 
 // Virtual để lấy tên đầy đủ

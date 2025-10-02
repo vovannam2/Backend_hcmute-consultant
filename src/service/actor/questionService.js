@@ -109,6 +109,7 @@ exports.getQuestions = async (query) => {
     statusAnswer,
     title,
     departmentId,
+    fieldId,
     status,
     startDate,
     endDate,
@@ -119,11 +120,13 @@ exports.getQuestions = async (query) => {
   } = query;
 
   const filter = { statusDelete: false };
-  if (statusApproval !== undefined) filter.statusApproval = statusApproval;
-  if (statusAnswer !== undefined) filter.statusAnswer = statusAnswer;
+
+  if (statusApproval !== undefined) filter.statusApproval = statusApproval === "true";
+  if (statusAnswer !== undefined) filter.statusAnswer = statusAnswer === "true";
   if (title) filter.title = { $regex: title, $options: "i" };
-  if (departmentId) filter.department = departmentId;
-  if (status) filter.statusPublic = statusPublic === "true";
+  if (departmentId) filter.department = departmentId; // vì bạn lưu string
+  if (fieldId) filter.field = fieldId; // thêm filter field
+  if (status !== undefined) filter.statusPublic = status === "true";
 
   if (startDate || endDate) {
     filter.createdAt = {};
@@ -135,12 +138,15 @@ exports.getQuestions = async (query) => {
     .sort({ [sortBy]: sortDir === "desc" ? -1 : 1 })
     .skip(Number(page) * Number(size))
     .limit(Number(size))
-    .populate("user department field");
+    .populate("user", "_id username")
+    // .populate("department", "_id name")
+    // .populate("field", "_id name");
 
   const total = await Question.countDocuments(filter);
 
   return { data, total, page: Number(page), size: Number(size) };
 };
+
 
 //get question of me
 exports.getMyQuestions = async (userId, query) => {
@@ -160,7 +166,9 @@ exports.getMyQuestions = async (userId, query) => {
     .sort({ [sortBy]: sortDir === "desc" ? -1 : 1 })
     .skip(Number(page) * Number(size))
     .limit(Number(size))
-    .populate("user department field");
+    .populate("user", "_id username")
+    .populate("department", "_id name")
+    .populate("field", "_id name");
 
   const total = await Question.countDocuments(filter);
 
@@ -368,6 +376,7 @@ exports.createAnswer = async (data, consultantId) => {
     receiverId: question.user,
     content: `Câu hỏi "${question.title}" đã được tư vấn viên trả lời.`,
     notificationType: "ANSWER",
+    answerId: answer._id
   });
 
   return answer;
@@ -427,6 +436,7 @@ exports.requestAnswerReview = async (answerId, consultantId) => {
     receiverId: departmentHead._id,
     content: `Câu trả lời cho câu hỏi "${answer.question.title}" đã được gửi yêu cầu đánh giá.`,
     notificationType: "MESSAGE",
+    answerId: answer._id
   });
 
   return true;
@@ -466,6 +476,7 @@ exports.likeQuestion = async (questionId, userId) => {
       receiverId: question.user,
       content: `Câu hỏi "${question.title}" của bạn đã được thích.`,
       notificationType: "LIKE",
+      questionId: question._id
     });
   }
 
@@ -520,6 +531,7 @@ exports.likeAnswer = async (answerId, userId) => {
       receiverId: answer.user,
       content: `Câu trả lời của bạn cho câu hỏi "${answer.question?.title || ""}" đã được thích.`,
       notificationType: "LIKE",
+      answerId: answer._id
     });
   }
 
