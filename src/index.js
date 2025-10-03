@@ -18,6 +18,7 @@ const managerRoutes = require("./routes/managerRoutes");
 const postRoutes = require("./routes/postRoutes");
 const forwardQuestionRoutes = require("./routes/forwardQuestionRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
+const statisticRoutes = require("./routes/statisticRoutes");
 
 // Socket handlers
 const userSocket = require("./socket/userSocket");
@@ -47,6 +48,7 @@ app.use("/api/conversations", conversationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/manager", managerRoutes);
 app.use("/api/forward", forwardQuestionRoutes);
+app.use("/api/statistics", statisticRoutes);
 app.use("/api", departmentRoutes);
 app.use("/api", messageRoutes);
 app.use("/api/post", postRoutes);
