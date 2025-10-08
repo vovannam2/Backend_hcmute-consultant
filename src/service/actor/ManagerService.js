@@ -97,32 +97,29 @@ exports.getConsultantsByDepartment = async (departmentId) => {
 };
 
 exports.addConsultant = async (data, managerUser) => {
-  // Chỉ TRUONGBANTUVAN mới được thêm
   if (managerUser.role !== "TRUONGBANTUVAN") {
     throw new Error("Không có quyền thêm tư vấn viên");
   }
 
-  // Kiểm tra email trùng
   const existed = await User.findOne({ email: data.email });
-  if (existed) {
-    throw new Error("Email đã tồn tại");
-  }
+  if (existed) throw new Error("Email đã tồn tại");
 
-  // Tạo tài khoản tư vấn viên, gán cùng khoa của TRUONGBANTUVAN
+  // 🔒 Hash mật khẩu trước khi lưu
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+
   const consultant = await User.create({
     firstName: data.firstName,
     lastName: data.lastName,
     email: data.email,
     username: data.email,
     phone: data.phone || null,
-    password: data.password,       // nên hash trong pre-save hoặc middleware
+    password: hashedPassword,  
     role: "TUVANVIEN",
     department: managerUser.department,
-    isVerified: true,              // có thể cho verify ngay hoặc gửi mail xác thực
-    provider: "local"
+    isVerified: true,
+    provider: "local",
   });
 
-  // Ẩn thông tin nhạy cảm trước khi trả về
   const result = consultant.toObject();
   delete result.password;
   delete result.refreshToken;
