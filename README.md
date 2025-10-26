@@ -73,16 +73,19 @@ Hệ thống hỗ trợ:
 
 ## 🧱 Project Structure
 
+# 🧱 Project Structure
+
+```bash
 backend/
 ├── src/
-│ ├── config/ # Cấu hình database, email, cloud
-│ ├── controllers/ # Xử lý logic API
-│ ├── middlewares/ # Middleware xác thực, lỗi
-│ ├── models/ # Định nghĩa schema (Mongoose)
-│ ├── routes/ # Định tuyến API
-│ ├── services/ # Xử lý nghiệp vụ
-│ ├── utils/ # Hàm tiện ích
-│ └── app.js # Entry point chính
+│   ├── config/          # Cấu hình database, email, cloud
+│   ├── controllers/     # Xử lý logic API
+│   ├── middlewares/     # Middleware xác thực, lỗi
+│   ├── models/          # Định nghĩa schema (Mongoose)
+│   ├── routes/          # Định tuyến API
+│   ├── services/        # Xử lý nghiệp vụ
+│   ├── utils/           # Hàm tiện ích
+│   └── app.js           # Entry point chính
 ├── .env.example
 ├── package.json
 └── README.md
