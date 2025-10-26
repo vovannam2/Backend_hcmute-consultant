@@ -1,7 +1,5 @@
 # 🧠 HCMUTE Student Consulting System – Backend API
 
-License: MIT  
-Build Status: ✅ Stable  
 Database: MongoDB  
 Framework: Express.js  
 
@@ -18,9 +16,7 @@ Cung cấp các RESTful endpoint để quản lý người dùng, tư vấn viê
 - [Project Structure](#-project-structure)
 - [Installation Guide](#️-installation-guide)
 - [Environment Variables](#-environment-variables)
-- [API Overview](#-api-overview)
 - [Authors](#-authors)
-- [License](#-license)
 
 ---
 
@@ -71,75 +67,76 @@ Hệ thống hỗ trợ:
 
 ---
 
-## 🧱 Project Structure
-
-# 🧱 Project Structure
-
-```bash
-backend/
+## 📂 Project Structure
+```
+Backend_hcmute-consultant_admin/
+│
 ├── src/
-│   ├── config/          # Cấu hình database, email, cloud
-│   ├── controllers/     # Xử lý logic API
-│   ├── middlewares/     # Middleware xác thực, lỗi
-│   ├── models/          # Định nghĩa schema (Mongoose)
-│   ├── routes/          # Định tuyến API
-│   ├── services/        # Xử lý nghiệp vụ
-│   ├── utils/           # Hàm tiện ích
-│   └── app.js           # Entry point chính
-├── .env.example
+│   ├── departments/
+│   │   ├── departments.controller.ts
+│   │   ├── departments.service.ts
+│   │   └── schemas/
+│   │       ├── department.schema.ts
+│   │       └── field.schema.ts
+│   ├── users/
+│   ├── questions/
+│   ├── answers/
+│   ├── posts/
+│   ├── app.module.ts
+│   └── main.ts
+│
+├── dist/                # compiled JS files
 ├── package.json
-└── README.md
+├── tsconfig.json
+└── .env.example
+```
 
-## ⚙️ Installation Guide
+---
+
+## ⚙️ Installation
 
 ### 1️⃣ Clone repository
 ```bash
-git clone https://github.com/yourusername/hcmute-consulting-backend.git
-cd hcmute-consulting-backend
+git clonehttps://github.com/vovannam2/Backend_hcmute-consultant.git
+cd Backend_hcmute-consultant_admin
+```
 
 ### 2️⃣ Install dependencies
+```bash
 npm install
 # hoặc
 yarn install
+```
 
-### 3️⃣ Configure environment variables
+---
 
-Tạo file .env trong thư mục gốc:
+## 🧩 Environment Variables
 
+Tạo file `.env` trong thư mục gốc:
+
+```env
 PORT=5001
-MONGODB_URI=mongodb://127.0.0.1:27017/hcmute_consulting
-
+MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
 JWT_REFRESH_SECRET=your_jwt_refresh_secret
-
+OTP_EXPIRES_MIN=5
 EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
-
+EMAIL_PASS=your_email_app_password
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+```
 
+---
 
-⚠️ Không commit file .env lên GitHub!
-Đây là file nhạy cảm chứa thông tin đăng nhập và khóa bảo mật.
+## 🚀 Run Commands
 
-### 4️⃣ Run development server
-npm run dev
+### Development
+```bash
+npm run start:dev
+```
 
-
-Server sẽ khởi chạy tại:
-👉 http://localhost:5001
-
-### 🌐 API Overview
-Nhóm chức năng	Mô tả
-/api/auth	Đăng ký, đăng nhập, xác thực người dùng
-/api/users	Quản lý hồ sơ người dùng
-/api/questions	Quản lý câu hỏi & trả lời
-/api/conversations	Trò chuyện giữa sinh viên & tư vấn viên
-/api/posts	Quản lý bài viết tư vấn
-/api/notifications	Gửi và nhận thông báo
-/api/departments	Quản lý phòng ban & lĩnh vực
-### 👨‍💻 Authors
+👨‍💻 Tác giả
 
 Nhóm phát triển Backend:
 
@@ -149,4 +146,5 @@ Nhóm phát triển Backend:
 
 👨‍💻 Võ Văn Nam
 
-🎓 Trường Đại học Sư phạm Kỹ thuật TP.HCM
+🎓 Trường Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)
+
