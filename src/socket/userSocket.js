@@ -3,15 +3,16 @@ const User = require("../models/User");
 const onlineUsers = new Map();
 
 module.exports = (io, socket) => {
-  console.log("✅ User connected:", socket.id);
 
   // Khi client báo userId
   socket.on("userOnline", async (userId) => {
-    console.log("userOnline called:", userId, "socketId:", socket.id);
     if (!userId) return;
 
-    // Gán userId vào socket để messageSocket dùng
-    socket.user = { id: userId };
+    // User ID đã được set từ authentication middleware
+    // Chỉ cần verify userId matches với authenticated user
+    if (socket.user && socket.user.id !== userId) {
+      return;
+    }
 
     if (!onlineUsers.has(userId)) {
       onlineUsers.set(userId, new Set());
@@ -28,14 +29,12 @@ module.exports = (io, socket) => {
     const onlineUserIds = Array.from(onlineUsers.keys());
     socket.emit("onlineUsersList", onlineUserIds);
     
-    console.log(`User ${userId} is online`);
   });
 
   // Join conversation
   socket.on("joinConversation", (conversationId) => {
     if (!conversationId) return;
     socket.join(conversationId);
-    console.log(`${socket.id} joined conversation ${conversationId}`);
     socket.emit("joinedConversation", { conversationId });
   });
 
@@ -53,11 +52,9 @@ module.exports = (io, socket) => {
           });
 
           io.emit("userStatusChanged", { userId, status: "offline" });
-          console.log(`User ${userId} is offline`);
         }
         break;
       }
     }
-    console.log(" User disconnected:", socket.id);
   });
 };

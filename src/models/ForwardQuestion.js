@@ -61,4 +61,14 @@ forwardQuestionSchema.index({ toDepartment: 1 });
 forwardQuestionSchema.index({ statusForward: 1 });
 forwardQuestionSchema.index({ createdAt: -1 });
 
+// Transform _id thành id để đồng bộ với frontend
+forwardQuestionSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
+
 module.exports = mongoose.model('ForwardQuestion', forwardQuestionSchema);

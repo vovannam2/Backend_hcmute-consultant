@@ -44,6 +44,18 @@ const messageSchema = new mongoose.Schema({
     default: 'SENT' 
   },
   
+  // Trạng thái đọc tin nhắn cho từng người nhận
+  readBy: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    readAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  
   // Thu hồi tin nhắn
   recalledForEveryone: { 
     type: Boolean, 
@@ -69,5 +81,15 @@ messageSchema.index({ sender: 1 });
 messageSchema.index({ receivers: 1 });
 messageSchema.index({ date: -1 });
 messageSchema.index({ messageStatus: 1 });
+
+// Transform _id thành id để đồng bộ với frontend
+messageSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
 
 module.exports = mongoose.model('Message', messageSchema);

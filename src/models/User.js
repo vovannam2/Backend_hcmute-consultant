@@ -12,15 +12,13 @@ const userSchema = new mongoose.Schema({
   // Thông tin cơ bản
   email: { 
     type: String, 
-    required: true, 
-    unique: true, 
+    required: true,
     maxlength: 50,
     lowercase: true 
   },
   username: { 
     type: String, 
-    required: true, 
-    unique: true, 
+    required: true,
     maxlength: 50 
   },
   password: { 
@@ -50,8 +48,7 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   schoolName: { type: String, maxlength: 255 },
-  firstName: { type: String, maxlength: 50 },
-  lastName: { type: String, maxlength: 50 },
+  fullName: { type: String, maxlength: 100 },
   phone: { 
     type: String, 
     //unique: true, 
@@ -109,9 +106,9 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes để tối ưu truy vấn
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Indexes để tối ưu truy vấn - với unique constraint
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 userSchema.index({ department: 1 });
 userSchema.index({ isActivity: 1 });
@@ -126,10 +123,6 @@ userSchema.index(
   { unique: true, partialFilterExpression: { studentCode: { $type: "string" } } }
 );
 
-// Virtual để lấy tên đầy đủ
-userSchema.virtual('fullName').get(function() {
-  return `${this.lastName} ${this.firstName}`.trim();
-});
 
 // Method để kiểm tra quyền
 userSchema.methods.hasRole = function(role) {
@@ -145,5 +138,15 @@ userSchema.methods.isConsultant = function() {
 userSchema.methods.isDepartmentHead = function() {
   return this.role === 'TRUONGBANTUVAN';
 };
+
+// Transform _id thành id để đồng bộ với frontend
+userSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
 
 module.exports = mongoose.model('User', userSchema);

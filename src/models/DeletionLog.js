@@ -34,4 +34,14 @@ deletionLogSchema.index({ question: 1 });
 deletionLogSchema.index({ deletedBy: 1 });
 deletionLogSchema.index({ deletedAt: -1 });
 
+// Transform _id thành id để đồng bộ với frontend
+deletionLogSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
+
 module.exports = mongoose.model('DeletionLog', deletionLogSchema);

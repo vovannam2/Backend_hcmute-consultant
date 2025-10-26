@@ -51,9 +51,19 @@ const resetPassword = async ({ email, code, newPassword }) => {
 };
 
 // ===== REGISTER WITH OTP =====
-const registerRequest = async ({ firstName, lastName, email, password, role, studentCode, phone }) => {
-  if (!firstName || !lastName || !email || !password || !role || !studentCode || !phone) {
+const registerRequest = async ({ fullName, email, password, role, studentCode, phone, department }) => {
+  if (!fullName || !email || !password || !studentCode || !phone) {
     throw { status: 400, message: "Missing fields" };
+  }
+
+  // Mặc định role là USER nếu không có
+  if (!role) {
+    role = 'USER';
+  }
+
+  // Kiểm tra department cho tư vấn viên
+  if (role === 'TUVANVIEN' && !department) {
+    throw { status: 400, message: "Tư vấn viên cần chọn khoa/phòng ban" };
   }
 
   email = email.trim().toLowerCase();
@@ -76,12 +86,12 @@ const registerRequest = async ({ firstName, lastName, email, password, role, stu
     email,
     code,
     purpose: "register",
-    firstName,
-    lastName,
+    fullName,
     password: passwordHash,
     role,
     studentCode,
     phone,
+    department,
     expiresAt,
     attempts: 0,
   });
@@ -122,24 +132,24 @@ const registerVerify = async ({ email, code }) => {
 
   let user = await User.findOne({ email });
   if (user) {
-    user.firstName = otpDoc.firstName || user.firstName;
-    user.lastName = otpDoc.lastName || user.lastName;
+    user.fullName = otpDoc.fullName || user.fullName;
     user.password = otpDoc.password || user.password;
     user.role = otpDoc.role || user.role;
     user.studentCode = otpDoc.studentCode || user.studentCode;
     user.phone = otpDoc.phone || user.phone;
+    user.department = otpDoc.department || user.department;
     user.isVerified = true;
     await user.save();
   } else {
     user = await User.create({
-      firstName: otpDoc.firstName,
-      lastName: otpDoc.lastName,
+      fullName: otpDoc.fullName,
       email,
       username: email,
       password: otpDoc.password,
       role: otpDoc.role,
       studentCode: otpDoc.studentCode,
       phone: otpDoc.phone,
+      department: otpDoc.department,
       isVerified: true,
     });
   }
@@ -196,10 +206,28 @@ const login = async ({ email, password }) => {
   user.refreshToken = refreshToken;
   await user.save();
 
+  // Trả về user đã được làm sạch (không bao gồm các trường nhạy cảm)
+  const userSafe = {
+    id: String(user._id),
+    email: user.email,
+    username: user.username,
+    fullName: user.fullName,
+    phone: user.phone,
+    role: user.role,
+    department: user.department,
+    studentCode: user.studentCode,
+    avatarUrl: user.avatarUrl ?? null,
+    gender: user.gender,
+    address: user.address,
+    isOnline: user.isOnline,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+
   return {
     accessToken,
     refreshToken,
-    user: { id: user._id, email: user.email, role: user.role , department: user.department}
+    user: userSafe,
   };
 };
 
@@ -248,7 +276,7 @@ const getProfile = async (userId) => {
 // Cập nhật thông tin cá nhân
 const updateProfile = async (userId, data) => {
   try {
-    const allowedFields = ["username", "firstName", "lastName", "phone", "gender", "address", "avatarUrl", "studentCode"];
+    const allowedFields = ["username", "fullName", "phone", "gender", "address", "avatarUrl", "studentCode"];
     const updateData = {};
 
     allowedFields.forEach((field) => {
@@ -283,6 +311,104 @@ const uploadAvatar = async (userId, avatarUrl) => {
   }
 };
 
+// Lấy danh sách tư vấn viên theo khoa
+const getConsultantsByDepartment = async (departmentId) => {
+  try {
+    const consultants = await User.find({
+      role: "TUVANVIEN",
+      department: departmentId
+    }).select("-password -refreshToken -__v -verifyCodeAttemptCount -provider -isActivity -isOnline -isVerified");
+    
+    return consultants;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Lấy danh sách tư vấn viên đang online
+const getOnlineConsultants = async () => {
+  try {
+    const consultants = await User.find({
+      role: "TUVANVIEN",
+      isOnline: true
+    }).select("-password -refreshToken -__v -verifyCodeAttemptCount -provider -isActivity -isVerified");
+    
+    return consultants;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Lấy danh sách tất cả tư vấn viên với pagination và filter
+const getAllConsultants = async ({ page = 0, size = 10, sortBy = 'firstName', sortDir = 'asc', name, departmentId }) => {
+  try {
+    const skip = parseInt(page) * parseInt(size);
+    const limit = parseInt(size);
+    
+    // Build filter
+    const filter = { role: "TUVANVIEN" };
+    
+    if (name) {
+      filter.$or = [
+        { fullName: { $regex: name, $options: 'i' } },
+        { username: { $regex: name, $options: 'i' } }
+      ];
+    }
+    
+    if (departmentId) {
+      filter.department = departmentId;
+    }
+    
+    // Build sort
+    const sort = {};
+    if (sortBy === 'firstName') sort.fullName = sortDir === 'asc' ? 1 : -1;
+    else if (sortBy === 'department') sort['department.name'] = sortDir === 'asc' ? 1 : -1;
+    
+    // Get consultants
+    const consultants = await User.find(filter)
+      .select("-password -refreshToken -__v -verifyCodeAttemptCount -provider -isActivity -isVerified")
+      .populate('department', 'id name')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count
+    const totalElements = await User.countDocuments(filter);
+    
+    return {
+      content: consultants,
+      totalElements,
+      totalPages: Math.ceil(totalElements / limit),
+      page: parseInt(page),
+      size: parseInt(size)
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Lấy thông tin tư vấn viên theo ID
+const getConsultantById = async (id) => {
+  try {
+    const consultant = await User.findOne({
+      _id: id,
+      role: "TUVANVIEN"
+    })
+      .select("-password -refreshToken -__v -verifyCodeAttemptCount -provider")
+      .populate('department', 'id name');
+    
+    if (!consultant) {
+      const error = new Error('Không tìm thấy tư vấn viên');
+      error.status = 404;
+      throw error;
+    }
+    
+    return consultant;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   forgotPassword,
   verifyOtp,
@@ -294,4 +420,8 @@ module.exports = {
   getProfile,
   updateProfile,
   uploadAvatar,
+  getConsultantsByDepartment,
+  getOnlineConsultants,
+  getAllConsultants,
+  getConsultantById,
 };

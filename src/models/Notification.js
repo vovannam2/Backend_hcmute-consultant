@@ -62,4 +62,14 @@ notificationSchema.index({ notificationType: 1 });
 notificationSchema.index({ questionId: 1 });
 notificationSchema.index({ answerId: 1 });
 
+// Transform _id thành id để đồng bộ với frontend
+notificationSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
+
 module.exports = mongoose.model('Notification', notificationSchema);

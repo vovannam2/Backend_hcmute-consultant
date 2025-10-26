@@ -1,35 +1,30 @@
 const ManagerService = require("../../service/actor/ManagerService");
-
-const makeResponse = (status, message, data = null) => ({
-  status,
-  message,
-  data,
-});
+const { DataResponse, ExceptionResponse } = require("../../utils/response");
 
 exports.getPendingAnswers = async (req, res) => {
   try {
     const result = await ManagerService.getPendingAnswers(req.user, req.query);
-    res.json(makeResponse("success", "Danh sách câu trả lời chờ duyệt", result));
+    return res.status(200).json(new DataResponse(result, "Danh sách câu trả lời chờ duyệt", 'success'));
   } catch (err) {
-    res.status(400).json(makeResponse("error", err.message));
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 exports.approveAnswer = async (req, res) => {
   try {
     await ManagerService.approveAnswer(req.params.id, req.user);
-    res.json(makeResponse("success", "Đã duyệt câu trả lời"));
+    return res.status(200).json(new DataResponse(null, "Đã duyệt câu trả lời", 'success'));
   } catch (err) {
-    res.status(400).json(makeResponse("error", err.message));
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 exports.rejectAnswer = async (req, res) => {
   try {
     await ManagerService.rejectAnswer(req.params.id, req.user, req.body.reason);
-    res.json(makeResponse("success", "Đã từ chối câu trả lời"));
+    return res.status(200).json(new DataResponse(null, "Đã từ chối câu trả lời", 'success'));
   } catch (err) {
-    res.status(400).json(makeResponse("error", err.message));
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
@@ -49,18 +44,18 @@ exports.getConsultants = async (req, res) => {
       req.user.department
     );
 
-    res.json(makeResponse("success", "Danh sách tư vấn viên", consultants));
+    return res.status(200).json(new DataResponse(consultants, "Danh sách tư vấn viên", 'success'));
   } catch (err) {
-    res.status(400).json(makeResponse("error", err.message));
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 exports.addConsultant = async (req, res) => {
   try {
     const newConsultant = await ManagerService.addConsultant(req.body, req.user);
-    res.json(makeResponse("success", "Đã thêm tư vấn viên", newConsultant));
+    return res.status(201).json(new DataResponse(newConsultant, "Đã thêm tư vấn viên", 'success'));
   } catch (err) {
-    res.status(400).json(makeResponse("error", err.message));
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
@@ -68,10 +63,10 @@ exports.updateConsultant = async (req, res) => {
   try {
     // kiểm tra dữ liệu đầu vào
     if (!req.params.id) {
-      return res.status(400).json(makeResponse("error", "Thiếu ID tư vấn viên"));
+      return res.status(400).json(new ExceptionResponse("Thiếu ID tư vấn viên", undefined, 'error'));
     }
     if (!req.body || Object.keys(req.body).length === 0) {
-      return res.status(400).json(makeResponse("error", "Thiếu dữ liệu cập nhật"));
+      return res.status(400).json(new ExceptionResponse("Thiếu dữ liệu cập nhật", undefined, 'error'));
     }
 
     const consultant = await ManagerService.updateConsultant(
@@ -80,19 +75,19 @@ exports.updateConsultant = async (req, res) => {
       req.body           // dữ liệu cập nhật
     );
 
-    res.json(makeResponse("success", "Cập nhật thành công", consultant));
+    return res.status(200).json(new DataResponse(consultant, "Cập nhật thành công", 'success'));
   } catch (err) {
     console.error(err);
-    res.status(400).json(makeResponse("error", err.message));
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
 exports.deleteConsultant = async (req, res) => {
   try {
     const result = await ManagerService.deleteConsultant(req.user, req.params.id);
-    res.json(makeResponse("success", "Đã xóa tư vấn viên", result));
+    return res.status(200).json(new DataResponse(result, "Đã xóa tư vấn viên", 'success'));
   } catch (err) {
-    res.status(400).json(makeResponse("error", err.message));
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };
 
@@ -102,8 +97,41 @@ exports.getConsultantPerformance = async (req, res) => {
       req.user,        // TRUONGBANTUVAN đang đăng nhập
       req.params.id    // id tư vấn viên
     );
-    res.json(makeResponse("success", "Lấy hiệu suất thành công", data));
+    return res.status(200).json(new DataResponse(data, "Lấy hiệu suất thành công", 'success'));
   } catch (err) {
-    res.status(400).json(makeResponse("error", err.message));
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
+  }
+};
+
+// POST /advisor-admin/answer/review - Phê duyệt câu trả lời
+exports.reviewAnswer = async (req, res) => {
+  try {
+    const { questionId, content } = req.query;
+    const fileUrl = req.file ? req.file.path : null;
+    
+    if (!questionId || !content) {
+      return res.status(400).json(new ExceptionResponse("Thiếu questionId hoặc content", undefined, 'error'));
+    }
+
+    const result = await ManagerService.reviewAnswer(questionId, content, fileUrl, req.user);
+    return res.status(200).json(new DataResponse(result, "Phê duyệt câu trả lời thành công", 'success'));
+  } catch (err) {
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
+  }
+};
+
+// POST /advisor-admin/common-question/convert-to-common - Chuyển thành câu hỏi chung
+exports.convertToCommonQuestion = async (req, res) => {
+  try {
+    const { questionId } = req.query;
+    
+    if (!questionId) {
+      return res.status(400).json(new ExceptionResponse("Thiếu questionId", undefined, 'error'));
+    }
+
+    const result = await ManagerService.convertToCommonQuestion(questionId, req.user);
+    return res.status(200).json(new DataResponse(result, "Chuyển thành câu hỏi chung thành công", 'success'));
+  } catch (err) {
+    return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
   }
 };

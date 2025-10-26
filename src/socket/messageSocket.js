@@ -6,6 +6,7 @@ module.exports = (io, socket) => {
   // Gửi tin nhắn
   socket.on("sendMessage", async (data, callback) => {
     try {
+      
       if (!socket.user || !socket.user.id) {
         return callback({ success: false, error: "User chưa đăng nhập socket" });
       }
@@ -28,6 +29,20 @@ module.exports = (io, socket) => {
         imageUrl = result.secure_url;
       }
 
+      // Nếu có imageUrl (từ upload file, có thể là ảnh hoặc file)
+      if (data.imageUrl) {
+        // Kiểm tra xem có phải file không phải ảnh không
+        const isFile = data.imageUrl.includes('uploads/files') || 
+                      data.imageUrl.includes('chat/files') ||
+                      data.imageUrl.match(/\.(pdf|doc|docx|xls|xlsx|txt|zip|rar)$/i);
+        
+        if (isFile) {
+          fileUrl = data.imageUrl;
+        } else {
+          imageUrl = data.imageUrl;
+        }
+      }
+
       if (data.fileUrl) {
         fileUrl = data.fileUrl;
       }
@@ -47,6 +62,18 @@ module.exports = (io, socket) => {
 
       // Emit sự kiện ở đây
       io.to(data.conversationId).emit("newMessage", message);
+      
+      // Emit cập nhật số lượng hội thoại chưa đọc cho các thành viên khác
+      const conversation = await messageSocketService.getConversationById(data.conversationId);
+      if (conversation && conversation.members) {
+        for (const member of conversation.members) {
+          if (member.id !== socket.user.id) {
+            const unreadCount = await messageSocketService.getUnreadConversationCount(member.id);
+            io.to(member.id.toString()).emit("unreadConversationCount", unreadCount);
+          }
+        }
+      }
+      
       callback({ success: true, message });
     } catch (err) {
       console.error("sendMessage error:", err);

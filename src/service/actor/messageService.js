@@ -20,12 +20,15 @@ exports.getMessages = async (conversationId, userId) => {
 
   return Message.find({ conversation: conversation._id })
     .sort({ createdAt: 1 })
-    .populate("sender", "firstName lastName avatarUrl");
+    .populate("sender", "fullName avatarUrl");
 };
 
 exports.sendMessage = async (conversationId, senderId, data) => {
+  
   const conversation = await Conversation.findById(conversationId);
-  if (!conversation) throw new Error("Không tìm thấy cuộc trò chuyện");
+  if (!conversation) {
+    throw new Error("Không tìm thấy cuộc trò chuyện");
+  }
 
   const senderObjectId = new mongoose.Types.ObjectId(senderId);
 
@@ -34,7 +37,9 @@ exports.sendMessage = async (conversationId, senderId, data) => {
     (conversation.consultant && conversation.consultant.equals(senderObjectId)) ||
     (Array.isArray(conversation.members) && conversation.members.some((m) => m.user && m.user.equals(senderObjectId)));
 
-  if (!isMember) throw new Error("Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này");
+  if (!isMember) {
+    throw new Error("Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này");
+  }
 
   const memberIds = [
     conversation.user,
@@ -46,6 +51,7 @@ exports.sendMessage = async (conversationId, senderId, data) => {
     .filter((id) => id !== senderId.toString())
     .map((id) => new mongoose.Types.ObjectId(id));
 
+
   const message = new Message({
     conversation: conversation._id,
     sender: new mongoose.Types.ObjectId(senderId),
@@ -56,9 +62,11 @@ exports.sendMessage = async (conversationId, senderId, data) => {
   });
 
   await message.save();
-  await message.populate("sender", "firstName lastName email avatarUrl");
+  
+  await message.populate("sender", "fullName email avatarUrl");
 
   await User.findByIdAndUpdate(senderId, { lastActivity: new Date(), isOnline: true });
+  
   return message;
 };
 
@@ -74,7 +82,7 @@ exports.updateMessage = async (messageId, userId, newContent) => {
   message.edited = true;
   message.editedDate = Date.now();
   await message.save();
-  return message.populate("sender", "firstName lastName email avatarUrl");
+  return message.populate("sender", "fullName email avatarUrl");
 };
 
 exports.deleteMessage = async (messageId, userId) => {
@@ -86,5 +94,25 @@ exports.deleteMessage = async (messageId, userId) => {
   }
 
   await message.deleteOne();
-  return { _id: messageId, conversation: message.conversation };
+  return { id: messageId, conversation: message.conversation };
+};
+
+exports.getLastReadMessage = async (userId, conversationId) => {
+  // Tìm tin nhắn cuối cùng mà user đã đọc trong cuộc hội thoại
+  // Đây là một implementation đơn giản, có thể cần cải thiện tùy theo logic business
+  const messages = await Message.find({
+    conversation: conversationId,
+    sender: { $ne: userId }
+  }).sort({ createdAt: -1 }).limit(1);
+  
+  return messages.length > 0 ? messages[0] : null;
+};
+
+exports.getLastMessageInConversation = async (conversationId) => {
+  // Tìm tin nhắn cuối cùng trong cuộc hội thoại
+  const message = await Message.findOne({
+    conversation: conversationId
+  }).sort({ createdAt: -1 });
+  
+  return message;
 };

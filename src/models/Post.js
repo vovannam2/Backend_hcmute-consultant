@@ -27,6 +27,18 @@ const postSchema = new mongoose.Schema({
     required: true
   },
 
+  // Trạng thái duyệt
+  approved: {
+    type: Boolean,
+    default: false
+  },
+
+  // Số lượt xem
+  views: {
+    type: Number,
+    default: 0
+  },
+
   // Thời gian tạo
   createdAt: {
     type: Date,
@@ -39,5 +51,15 @@ const postSchema = new mongoose.Schema({
 // Indexes
 postSchema.index({ user: 1 });
 postSchema.index({ createdAt: -1 });
+
+// Transform _id thành id để đồng bộ với frontend
+postSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
 
 module.exports = mongoose.model('Post', postSchema);

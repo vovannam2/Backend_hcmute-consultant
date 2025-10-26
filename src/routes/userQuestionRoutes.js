@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const questionController = require("../controllers/actor/questionController");
 const authMiddleware = require("../middleware/authMiddleware");
-const { uploadImage } = require("../config/cloudinary");
+const { uploadAny } = require("../config/cloudinary");
 const parseBoolean = require("../middleware/parseBoolean");
 
 // =======================
@@ -13,16 +13,16 @@ const parseBoolean = require("../middleware/parseBoolean");
 router.post(
   "/create",
   authMiddleware(),
-  parseBoolean,
-  uploadImage.single("file"),
+  uploadAny.single("file"), // <- đưa lên trước để parse multipart (req.file + req.body)
+  parseBoolean,             // <- xử lý req.body sau khi multer parse xong
   questionController.createQuestion
 );
-
 // Cập nhật câu hỏi - Frontend gọi: PUT /api/user/question/update
 router.put(
   "/update",
   authMiddleware(),
-  uploadImage.single("file"),
+  parseBoolean,
+  uploadAny.single("file"),
   questionController.updateQuestion
 );
 

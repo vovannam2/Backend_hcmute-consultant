@@ -31,7 +31,7 @@ const answerSchema = new mongoose.Schema({
   },
   roleConsultant: { 
     type: String, 
-    enum: ['GIANGVIEN', 'SINHVIEN'], 
+    enum: ['USER', 'TUVANVIEN', 'TRUONGBANTUVAN', 'GIANGVIEN', 'SINHVIEN'], 
     required: true 
   },
   
@@ -59,5 +59,15 @@ answerSchema.index({ question: 1 });
 answerSchema.index({ user: 1 });
 answerSchema.index({ statusApproval: 1 });
 answerSchema.index({ createdAt: -1 });
+
+// Transform _id thành id để đồng bộ với frontend
+answerSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
 
 module.exports = mongoose.model('Answer', answerSchema);

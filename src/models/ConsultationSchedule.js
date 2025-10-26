@@ -37,10 +37,6 @@ const consultationScheduleSchema = new mongoose.Schema({
   },
   
   // Trạng thái
-  statusConfirmed: { 
-    type: Boolean, 
-    default: false 
-  },
   statusPublic: { 
     type: Boolean, 
     default: true 
@@ -73,7 +69,7 @@ const consultationScheduleSchema = new mongoose.Schema({
   
   // Người tạo
   createdBy: { 
-    type: Number, 
+    type: mongoose.Schema.Types.ObjectId, 
     required: true 
   },
   
@@ -91,7 +87,6 @@ consultationScheduleSchema.index({ user: 1 });
 consultationScheduleSchema.index({ consultant: 1 });
 consultationScheduleSchema.index({ department: 1 });
 consultationScheduleSchema.index({ consultationDate: 1 });
-consultationScheduleSchema.index({ statusConfirmed: 1 });
 consultationScheduleSchema.index({ statusPublic: 1 });
 
 // Virtual để lấy đăng ký tư vấn
@@ -99,6 +94,24 @@ consultationScheduleSchema.virtual('registrations', {
   ref: 'ConsultationScheduleRegistration',
   localField: '_id',
   foreignField: 'consultationSchedule'
+});
+
+// Virtual để đếm số lượng người tham gia
+consultationScheduleSchema.virtual('participantCount', {
+  ref: 'ConsultationScheduleRegistration',
+  localField: '_id',
+  foreignField: 'consultationSchedule',
+  count: true
+});
+
+// Transform _id thành id để đồng bộ với frontend
+consultationScheduleSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
 });
 
 module.exports = mongoose.model('ConsultationSchedule', consultationScheduleSchema);

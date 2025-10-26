@@ -34,4 +34,14 @@ roleAuthSchema.index({ user: 1 });
 roleAuthSchema.index({ tokenId: 1 });
 roleAuthSchema.index({ expiredTime: 1 });
 
+// Transform _id thành id để đồng bộ với frontend
+roleAuthSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
+
 module.exports = mongoose.model('RoleAuth', roleAuthSchema);

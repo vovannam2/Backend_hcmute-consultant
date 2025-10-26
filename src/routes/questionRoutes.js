@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 const questionController = require("../controllers/actor/questionController");
 const authMiddleware = require("../middleware/authMiddleware");
-const { uploadImage } = require("../config/cloudinary");
-const { uploadFile } = require("../config/cloudinary");
+const { uploadAny } = require("../config/cloudinary");
 const parseBoolean = require("../middleware/parseBoolean");
 
 // Tạo câu hỏi mới
@@ -11,7 +10,7 @@ router.post(
   "/",
   authMiddleware(),
   parseBoolean,
-  uploadImage.single("file"),
+  uploadAny.single("file"),
   questionController.createQuestion
 );
 
@@ -19,7 +18,7 @@ router.post(
 router.put(
   "/:id",
   authMiddleware(),
-  uploadImage.single("file"),
+  uploadAny.single("file"),
   questionController.updateQuestion
 );
 
@@ -44,6 +43,12 @@ router.get(
   questionController.getQuestions
 );
 
+// Lấy danh sách trạng thái câu hỏi
+router.get(
+  "/list-filter-status-options",
+  questionController.getQuestionStatusOptions
+);
+
 // Lấy danh sách câu hỏi của mình
 router.get(
   "/my",
@@ -66,7 +71,7 @@ router.get(
 // Tạo câu hỏi bổ sung (follow-up question)
 router.post(
   "/:id/follow-up",
-  uploadImage.single("file"),
+  uploadAny.single("file"),
   authMiddleware(),
   questionController.askFollowUpQuestion
 );
@@ -85,7 +90,7 @@ router.get(
   questionController.getDeletionLogDetail
 );
 
-const onlyConsultant = authMiddleware(["TUVANVIEN"]);
+const onlyConsultant = authMiddleware(["TUVANVIEN","TRUONGBANTUVAN"]);
 
 // Xem câu hỏi chờ trả lời
 router.get("/consultant/questions/pending", onlyConsultant, questionController.getPendingQuestions);
@@ -93,11 +98,14 @@ router.get("/consultant/questions/pending", onlyConsultant, questionController.g
 // Xem câu hỏi đã trả lời
 router.get("/consultant/questions/answered", onlyConsultant, questionController.getAnsweredQuestions);
 
+// Xem tất cả câu hỏi theo department của tư vấn viên
+router.get("/consultant/questions/all", onlyConsultant, questionController.getAllQuestionsByDepartment);
+
 // Trả lời câu hỏi
 router.post(
   "/consultant/answers",
   onlyConsultant,
-  uploadFile.single("file"),
+  uploadAny.single("file"),
   questionController.createAnswer
 );
 
@@ -105,7 +113,7 @@ router.post(
 router.put(
   "/consultant/answers/:id",
   onlyConsultant,
-  uploadFile.single("file"),
+  uploadAny.single("file"),
   questionController.updateAnswer
 );
 
@@ -143,6 +151,19 @@ router.get(
   questionController.countQuestionLikes
 );
 
+// Lấy bản ghi like của câu hỏi
+router.get(
+  "/:id/like-records",
+  authMiddleware(),
+  questionController.getQuestionLikeRecord
+);
+
+// Lấy danh sách user đã like câu hỏi
+router.get(
+  "/:id/like-users",
+  questionController.getQuestionLikeUsers
+);
+
 // Like câu trả lời
 router.post(
   "/likes/answer/:id",
@@ -161,6 +182,21 @@ router.delete(
 router.get(
   "/likes/answer/count/:id",
   questionController.getAnswerLikes
+);
+
+// Update answer (for frontend compatibility)
+router.put(
+  "/answer/update",
+  authMiddleware(),
+  uploadAny.single("file"),
+  questionController.updateAnswerByParams
+);
+
+// Delete answer (for frontend compatibility)
+router.delete(
+  "/answer/delete",
+  authMiddleware(),
+  questionController.deleteAnswerByParams
 );
 
 module.exports = router;

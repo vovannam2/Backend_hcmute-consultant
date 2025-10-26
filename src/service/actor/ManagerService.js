@@ -17,9 +17,9 @@ exports.getPendingAnswers = async (user, query) => {
     .populate({
       path: "question",
       match: { department: departmentId },
-      populate: { path: "user", select: "username firstName lastName email" },
+      populate: { path: "user", select: "username fullName email" },
     })
-    .populate("user", "username firstName lastName email")
+    .populate("user", "username fullName email")
     .sort({ [sortBy]: sortDir === "desc" ? -1 : 1 })
     .skip(Number(page) * Number(size))
     .limit(Number(size));
@@ -110,8 +110,7 @@ exports.addConsultant = async (data, managerUser) => {
 
   // Tạo tài khoản tư vấn viên, gán cùng khoa của TRUONGBANTUVAN
   const consultant = await User.create({
-    firstName: data.firstName,
-    lastName: data.lastName,
+    fullName: data.fullName,
     email: data.email,
     username: data.email,
     phone: data.phone || null,
@@ -123,7 +122,7 @@ exports.addConsultant = async (data, managerUser) => {
   });
 
   // Ẩn thông tin nhạy cảm trước khi trả về
-  const result = consultant.toObject();
+  const result = consultant.toJSON();
   delete result.password;
   delete result.refreshToken;
   delete result.__v;
@@ -146,7 +145,7 @@ exports.updateConsultant = async (managerUser, consultantId, data) => {
   }
 
   // Cho phép chỉnh sửa các trường
-  const allowedFields = ["firstName", "lastName", "phone", "email", "password"];
+  const allowedFields = ["fullName", "phone", "email", "password"];
 
   for (const f of allowedFields) {
     if (Object.prototype.hasOwnProperty.call(data, f)) {
@@ -214,8 +213,7 @@ exports.getConsultantPerformance = async (managerUser, consultantId) => {
   return {
     consultant: {
       id: consultant._id,
-      firstName: consultant.firstName,
-      lastName: consultant.lastName,
+      fullName: consultant.fullName,
       email: consultant.email,
       department: consultant.department,
     },
@@ -229,4 +227,91 @@ exports.getConsultantPerformance = async (managerUser, consultantId) => {
           : 0,
     },
   };
+};
+
+// Phê duyệt câu trả lời
+exports.reviewAnswer = async (questionId, content, fileUrl, user) => {
+  try {
+    // Tìm câu hỏi
+    const question = await Question.findById(questionId);
+    if (!question) {
+      throw new Error("Không tìm thấy câu hỏi");
+    }
+
+    // Tạo hoặc cập nhật câu trả lời
+    let answer = await Answer.findOne({ question: questionId });
+    
+    if (answer) {
+      // Cập nhật câu trả lời hiện có
+      answer.content = content;
+      answer.fileUrl = fileUrl || answer.fileUrl;
+      answer.statusApproval = true;
+      answer.statusAnswer = true;
+      answer.user = user.id;
+      await answer.save();
+    } else {
+      // Tạo câu trả lời mới
+      answer = await Answer.create({
+        question: questionId,
+        content: content,
+        fileUrl: fileUrl,
+        statusApproval: true,
+        statusAnswer: true,
+        user: user.id,
+        title: "ANSWER"
+      });
+    }
+
+    // Cập nhật trạng thái câu hỏi
+    question.statusAnswer = true;
+    question.answerContent = content;
+    question.answerFileUrl = fileUrl;
+    question.answerUserFullName = user.fullName;
+    question.answerCreatedAt = new Date();
+    await question.save();
+
+    return {
+      message: "Phê duyệt câu trả lời thành công",
+      answerId: answer._id
+    };
+  } catch (error) {
+    throw new Error(`Lỗi khi phê duyệt câu trả lời: ${error.message}`);
+  }
+};
+
+// Chuyển câu hỏi thành câu hỏi chung
+exports.convertToCommonQuestion = async (questionId, user) => {
+  try {
+    const CommonQuestion = require('../../models/CommonQuestion');
+    
+    // Tìm câu hỏi
+    const question = await Question.findById(questionId);
+    if (!question) {
+      throw new Error("Không tìm thấy câu hỏi");
+    }
+
+    // Kiểm tra xem đã có câu hỏi chung chưa
+    const existingCommonQuestion = await CommonQuestion.findOne({ originalQuestion: questionId });
+    if (existingCommonQuestion) {
+      throw new Error("Câu hỏi đã được chuyển thành câu hỏi chung");
+    }
+
+    // Tạo câu hỏi chung
+    const commonQuestion = await CommonQuestion.create({
+      title: question.title,
+      content: question.content,
+      department: question.department,
+      field: question.field,
+      originalQuestion: questionId,
+      createdBy: user.id,
+      status: 'ACTIVE'
+    });
+
+    return {
+      message: "Chuyển thành câu hỏi chung thành công",
+      commonQuestionId: commonQuestion._id
+    };
+  } catch (error) {
+    throw new Error(`Lỗi khi chuyển thành câu hỏi chung: ${error.message}`);
+  }
 };

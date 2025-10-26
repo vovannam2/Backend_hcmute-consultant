@@ -47,4 +47,14 @@ wardSchema.index({ code: 1 });
 wardSchema.index({ name: 1 });
 wardSchema.index({ district: 1 });
 
+// Transform _id thành id để đồng bộ với frontend
+wardSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
+
 module.exports = mongoose.model('Ward', wardSchema);

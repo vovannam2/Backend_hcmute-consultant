@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const departmentSchema = new mongoose.Schema({
   name: { 
     type: String, 
-    required: true, 
-    unique: true, 
+    required: true,
     maxlength: 255 
   },
   description: { 
@@ -24,8 +23,17 @@ const departmentSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+// 👇 Thêm đoạn này để đổi _id thành id
+departmentSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
 
-// Indexes
-departmentSchema.index({ name: 1 });
+// Indexes - với unique constraint
+departmentSchema.index({ name: 1 }, { unique: true });
 
 module.exports = mongoose.model('Department', departmentSchema);

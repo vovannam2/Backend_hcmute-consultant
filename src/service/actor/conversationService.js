@@ -3,18 +3,54 @@ const User = require("../../models/User");
 // const mongoose = require("mongoose");
 // const notificationService = require("../common/notificationService");
 
-exports.createConversation = async (data, user, file) => {
-  const { name, consultantId, departmentId } = data;
+// Tạo conversation cho user (1-1 với consultant)
+exports.createUserConversation = async (data, user) => {
+  const { consultantId, departmentId } = data;
+
+  // Kiểm tra consultant có tồn tại không
+  const consultant = await User.findById(consultantId);
+  if (!consultant) {
+    throw new Error("Không tìm thấy tư vấn viên");
+  }
+
+  // Kiểm tra đã có conversation với consultant này chưa
+  const existingConversation = await Conversation.findOne({
+    user: user._id,
+    consultant: consultantId,
+    isGroup: false
+  });
+
+  if (existingConversation) {
+    throw new Error("Đã có cuộc trò chuyện với tư vấn viên này");
+  }
 
   const conversation = new Conversation({
-    name,
-    avatarUrl: file ? file.path : null,
+    name: `${user.fullName} - ${consultant.fullName}`,
     user: user._id,
     consultant: consultantId,
     department: departmentId,
+    isGroup: false,
     members: [
-      { user: user._id },
-      { user: consultantId }
+      { user: user._id, sender: true },
+      { user: consultantId, sender: false }
+    ],
+  });
+
+  await conversation.save();
+  return conversation;
+};
+
+// Tạo group conversation cho consultant
+exports.createGroupConversation = async (data, user) => {
+  const { name } = data;
+
+  const conversation = new Conversation({
+    name,
+    user: user._id,
+    consultant: user._id, // Consultant là người tạo group
+    isGroup: true,
+    members: [
+      { user: user._id, sender: true }
     ],
   });
 
@@ -72,46 +108,70 @@ exports.deleteConversation = async (conversationId, user) => {
 };
 
 // list conversations for a user
-exports.listConversations = async (userId) => {
-  return Conversation.find({
+exports.listConversations = async (userId, queryParams = {}) => {
+  const { page = 0, size = 20, sortBy = 'createdAt', sortDir = 'desc', name } = queryParams;
+  
+  const sortOptions = {};
+  sortOptions[sortBy] = sortDir === 'desc' ? -1 : 1;
+  
+  // Build filter query
+  const filterQuery = {
     $or: [
       { user: userId },
       { consultant: userId },
       { "members.user": userId }
     ]
-  })
+  };
+  
+  // Add name filter if provided
+  if (name && name.trim()) {
+    filterQuery.name = { $regex: name.trim(), $options: 'i' };
+  }
+  
+  const conversations = await Conversation.find(filterQuery)
     .populate({
       path: "members.user",
-      select: "firstName lastName email avatarUrl"
+      select: "fullName email avatarUrl"
     })
     .populate({
       path: "user",
-      select: "firstName lastName email avatarUrl"
+      select: "fullName email avatarUrl"
     })
     .populate({
       path: "consultant",
-      select: "firstName lastName email avatarUrl"
+      select: "fullName email avatarUrl"
     })
     .populate({
       path: "department",
       select: "name"
     })
-    .sort({ updatedAt: -1 });
+    .sort(sortOptions)
+    .skip(page * size)
+    .limit(parseInt(size));
+    
+  const total = await Conversation.countDocuments(filterQuery);
+  
+  return {
+    content: conversations,
+    totalElements: total,
+    totalPages: Math.ceil(total / size),
+    size: parseInt(size)
+  };
 };
 
 exports.getConversationDetail = async (conversationId, userId) => {
   const conversation = await Conversation.findById(conversationId)
     .populate({
       path: "members.user",
-      select: "firstName lastName email avatarUrl"
+      select: "fullName email avatarUrl"
     })
     .populate({
       path: "user",
-      select: "firstName lastName email avatarUrl"
+      select: "fullName email avatarUrl"
     })
     .populate({
       path: "consultant",
-      select: "firstName lastName email avatarUrl"
+      select: "fullName email avatarUrl"
     })
     .populate({
       path: "department",
@@ -267,7 +327,7 @@ exports.getConversationDetail = async (conversationId, userId) => {
 //   // populate đơn giản members.user để trả về thông tin member
 //   await conversation.populate({
 //     path: "members.user",
-//     select: "firstName lastName email avatarUrl role",
+//     select: "fullName email avatarUrl role",
 //   });
 
 //   return conversation;

@@ -17,7 +17,7 @@ const likeRecordSchema = new mongoose.Schema({
   // Loại đối tượng được like
   type: { 
     type: String, 
-    enum: ['QUESTION', 'ANSWER'], 
+    enum: ['QUESTION', 'ANSWER', 'POST', 'COMMENT'], 
     required: true 
   },
   
@@ -41,5 +41,15 @@ likeRecordSchema.index({
   userId: 1, 
   type: 1 
 }, { unique: true });
+
+// Transform _id thành id để đồng bộ với frontend
+likeRecordSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
 
 module.exports = mongoose.model('LikeRecord', likeRecordSchema);

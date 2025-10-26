@@ -2,31 +2,39 @@ const express = require("express");
 const router = express.Router();
 const conversationController = require("../controllers/actor/conversationController");
 const authMiddleware = require("../middleware/authMiddleware");
-const { uploadImage } = require("../config/cloudinary");
+const { uploadImageOnly } = require("../config/cloudinary");
 
+// Tạo conversation cho user
 router.post(
-  "/user/create",
+  "/user/conversation/create",
   authMiddleware(),
-  uploadImage.single("avatar"),
-  conversationController.createConversation
+  conversationController.createUserConversation
+);
+
+// Tạo group conversation cho consultant
+router.post(
+  "/consultant/conversation/create",
+  authMiddleware(),
+  conversationController.createGroupConversation
 );
 
 router.put(
   "/update/:conversationId",
   authMiddleware(),
-  uploadImage.single("avatar"),
+  uploadImageOnly.single("avatar"),
   conversationController.updateConversation
 );
 
+// Xóa conversation
 router.delete(
-  "/delete/:conversationId",
+  "/conversation/delete",
   authMiddleware(),
   conversationController.deleteConversation
 );
 
-// Lấy danh sách cuộc trò chuyện của user đã đăng nhập
+// Lấy danh sách cuộc trò chuyện
 router.get(
-  "/user",
+  "/conversation/list",
   authMiddleware(),
   conversationController.listConversations
 );
@@ -62,5 +70,25 @@ router.get(
 //   conversationController.listUsers
 // );
 
+// Lấy số lượng hội thoại chưa đọc
+router.get(
+  "/conversation/unread-count",
+  authMiddleware(),
+  conversationController.getUnreadConversationCount
+);
+
+// Đánh dấu tin nhắn đã đọc
+router.put(
+  "/message/:messageId/read",
+  authMiddleware(),
+  conversationController.markMessageAsRead
+);
+
+// Đánh dấu tất cả tin nhắn trong cuộc hội thoại đã đọc
+router.put(
+  "/conversation/:conversationId/read",
+  authMiddleware(),
+  conversationController.markConversationAsRead
+);
 
 module.exports = router;

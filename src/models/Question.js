@@ -29,6 +29,11 @@ const questionSchema = new mongoose.Schema({
     ref: 'Department', 
     required: true 
   },
+  originalDepartment: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department',
+    default: null // null nếu chưa được forward
+  },
   field: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Field', 
@@ -100,6 +105,16 @@ questionSchema.virtual('answers', {
   ref: 'Answer',
   localField: '_id',
   foreignField: 'question'
+});
+
+// Transform _id thành id để đồng bộ với frontend
+questionSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
 });
 
 module.exports = mongoose.model('Question', questionSchema);

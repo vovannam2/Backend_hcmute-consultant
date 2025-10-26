@@ -27,4 +27,14 @@ const fieldSchema = new mongoose.Schema({
 fieldSchema.index({ department: 1 });
 fieldSchema.index({ name: 1 });
 
+// Transform _id thành id để đồng bộ với frontend
+fieldSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id, ...rest };
+  }
+});
+
 module.exports = mongoose.model('Field', fieldSchema);

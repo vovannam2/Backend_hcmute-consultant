@@ -25,7 +25,18 @@ function authMiddleware(allowedRoles = []) {
 
       next();
     } catch (err) {
-      return res.status(401).json({ message: "Token is not valid" });
+      // Phân biệt 2 trường hợp 401
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          message: "Token expired", 
+          type: "EXPIRE_TOKEN" 
+        });
+      } else {
+        return res.status(401).json({ 
+          message: "Token is not valid", 
+          type: "INVALID_TOKEN" 
+        });
+      }
     }
   };
 }
