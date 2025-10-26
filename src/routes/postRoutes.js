@@ -22,6 +22,9 @@ router.get("/me", authMiddleware(), postController.getMyPosts);
 // Lấy danh sách tất cả bài viết (cho admin/manager/consultant)
 router.get("/list", authMiddleware(["ADMIN", "TRUONGBANTUVAN", "TUVANVIEN"]), postController.getPosts);
 
+// Lấy danh sách bài viết công khai (đã approved) - không cần authentication
+router.get("/public", postController.getPublicPosts);
+
 // Lấy chi tiết bài viết
 router.get("/detail", authMiddleware(), postController.getPostDetail);
 

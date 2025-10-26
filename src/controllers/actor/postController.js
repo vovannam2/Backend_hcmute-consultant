@@ -86,6 +86,18 @@ exports.getPosts = async (req, res) => {
     }
 };
 
+// Lấy danh sách bài viết công khai (đã approved)
+exports.getPublicPosts = async (req, res) => {
+    try {
+        // Chỉ lấy các bài viết đã được approved
+        const query = { ...req.query, isApproved: 'true' };
+        const posts = await postService.getPosts(query);
+        return res.status(200).json(new DataResponse(posts, "Lấy danh sách bài viết công khai thành công", 'success'));
+    } catch (err) {
+        return res.status(err.status || 500).json(new ExceptionResponse(err.message, undefined, 'error'));
+    }
+};
+
 // Lấy chi tiết bài viết
 exports.getPostDetail = async (req, res) => {
     try {
